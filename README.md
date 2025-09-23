@@ -1,6 +1,11 @@
 # Journey
 An AI-assisted fitness tracking app specializing in safety, correction, and commitment.
 
+### Recent Changes
+---
+
+
+
 ### Features
 ---
 
@@ -9,3 +14,5 @@ An AI-assisted fitness tracking app specializing in safety, correction, and comm
 💪🏽 Form Correction and Optimization
 
 🏃🏽‍♀️ Weekly Challenges
+
+
