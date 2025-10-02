@@ -21,15 +21,15 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final email = _emailController.text.trim();
-      // TODO: replace with real authentication logic and use the password
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Logging in as $email')));
-    }
-  }
+  // void _submit() {
+  //   if (_formKey.currentState?.validate() ?? false) {
+  //     final email = _emailController.text.trim();
+  //     // TODO: replace with real authentication logic and use the password
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(SnackBar(content: Text('Logging in as $email')));
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
