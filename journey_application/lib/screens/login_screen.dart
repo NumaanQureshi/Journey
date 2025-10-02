@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login.dart';
 
 class LoginScreen extends StatelessWidget
 {
@@ -13,7 +14,7 @@ class LoginScreen extends StatelessWidget
             // Using Sized box for image since AppBar is not fit for putting logo.
             SizedBox.expand(
               child: Image.asset(
-                'assets/images/login_bg.png',
+                'assets/images/login_bg.png', 
                 fit: BoxFit.cover,
                 ),
             ),
@@ -53,6 +54,12 @@ class LoginScreen extends StatelessWidget
                     ),
                     // Log In Function
                     onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const Login(),
+                        ),
+                      );
                     },
                     child: const Text(
                       'Log In',
