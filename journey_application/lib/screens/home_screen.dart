@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.black,
         leading: Builder(
           builder: (context) => IconButton(
+            color: Colors.blue,
             icon: const Icon(Icons.menu),
             tooltip: 'Menu',
             onPressed: () => Scaffold.of(context).openDrawer(),
@@ -37,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             tooltip: 'Profile',
             icon: const Icon(Icons.person_outline),
+            color: Colors.blue,
             onPressed: () {
               Navigator.push(
                 context,
@@ -49,6 +51,65 @@ class _HomeScreenState extends State<HomeScreen> {
         //   // onPressed: _openMenu
         //   icon: Icons.
         // ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Start a Workout - not implemented')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFBF6A02),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.fitness_center, size: 20, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text('Start a Workout', style: TextStyle(fontSize: 18)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Analytics - not implemented')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.show_chart, size: 20, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text('Analytics', style: TextStyle(fontSize: 18)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
