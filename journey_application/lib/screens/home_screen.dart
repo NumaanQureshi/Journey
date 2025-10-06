@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'profile_screen.dart';
 import 'side_menu.dart';
-import '../widgets/video_background.dart';
+// import '../widgets/video_background.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,6 +35,13 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4.0),
+          child: Container(
+              color: Colors.amber,
+              height: 4.0,
+          )
+        ),
         actions: [
           IconButton(
             tooltip: 'Profile',
@@ -48,70 +55,75 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ],
-        // leading: IconButton(
-        //   // onPressed: _openMenu
-        //   icon: Icons.
-        // ),
       ),
       body: Stack(
         children: [
-          const VideoBackground(asset: 'assets/images/animated_bg.mp4'),
+          // const VideoBackground(asset: 'assets/images/animated_bg.mp4'),
+          SizedBox.expand(
+            child: Image.asset(
+              'assets/images/static_gradient_bg.png', 
+              fit: BoxFit.cover,
+              ),
+          ),
           Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Start a Workout - not implemented')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFBF6A02),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.fitness_center, size: 20, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text('Start a Workout', style: TextStyle(fontSize: 18)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: SizedBox(
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Analytics - not implemented')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueGrey,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.show_chart, size: 20, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text('Analytics', style: TextStyle(fontSize: 18)),
-                          ],
+            child: SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Not Implemented')),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFBF6A02),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.fitness_center, size: 20, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text('Workout', style: TextStyle(fontSize: 18)),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: SizedBox(
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Not Implemented')),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueGrey,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.show_chart, size: 20, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text('Analytics', style: TextStyle(fontSize: 18)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
