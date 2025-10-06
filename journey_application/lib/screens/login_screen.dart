@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
+import 'sign_up.dart';
 
 class LoginScreen extends StatelessWidget
 {
@@ -88,6 +89,10 @@ class LoginScreen extends StatelessWidget
                     ),
                     // Sign Up Function
                     onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SignUp()),
+                      );
                     },
                     child: const Text(
                       'Sign Up',
