@@ -35,13 +35,13 @@ class SideMenu extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.fitness_center),
-              title: const Text('Workout'),
+              leading: const Icon(Icons.smart_toy),
+              title: const Text('Journey AI'),
               onTap: () => _notImplemented(context),
             ),
             ListTile(
-              leading: const Icon(Icons.smart_toy),
-              title: const Text('AI'),
+              leading: const Icon(Icons.fitness_center),
+              title: const Text('Workout'),
               onTap: () => _notImplemented(context),
             ),
             ListTile(
