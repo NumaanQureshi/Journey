@@ -13,17 +13,17 @@ class VideoBackground extends StatefulWidget {
 class _VideoBackgroundState extends State<VideoBackground> {
   late final VideoPlayerController _controller;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _controller = VideoPlayerController.asset(widget.asset)
-  //     ..setLooping(true)
-  //     ..setVolume(0)
-  //     ..initialize().then((_) {
-  //       setState(() {});
-  //       _controller.play();
-  //     });
-  // }
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.asset(widget.asset)
+      ..setLooping(true)
+      ..setVolume(0)
+      ..initialize().then((_) {
+        setState(() {});
+        _controller.play();
+      });
+  }
 
   @override
   void dispose() {
