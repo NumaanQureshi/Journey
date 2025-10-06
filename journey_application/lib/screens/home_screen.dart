@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blueGrey,
+                            backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
                           ),
                           child: Row(
