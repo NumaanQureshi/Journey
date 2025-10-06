@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'friend_screen.dart';
 
 class Profile extends StatelessWidget {
   const Profile({super.key});
@@ -7,7 +8,13 @@ class Profile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        iconTheme: const IconThemeData(color: Colors.blue),
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: Color(0xFFFBBF18),
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.black,
       ),
@@ -40,6 +47,21 @@ class Profile extends StatelessWidget {
               //     subtitle: const Text('Standard'),
               //   ),
               // ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.group),
+                  label: const Text('Friends'),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF667DB5)),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const Friend()),
+                    );
+                  },
+                ),
+              ),
               const SizedBox(height: 8),
               Card(
                 child: ListTile(
