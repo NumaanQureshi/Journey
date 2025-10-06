@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:journey_application/screens/home_screen.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -21,15 +22,15 @@ class _SignUpState extends State<SignUp> {
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Hook up real sign up logic (API / Firebase / etc.)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account created successfully')),
-      );
-      Navigator.pop(context); // Return to previous screen (e.g., login)
-    }
-  }
+  // void _submit() {
+  //   if (_formKey.currentState?.validate() ?? false) {
+  //     // TODO: Hook up real sign up logic (API / Firebase / etc.)
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text('Account created successfully')),
+  //     );
+  //     Navigator.pop(context); // Return to previous screen (e.g., login)
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +110,14 @@ class _SignUpState extends State<SignUp> {
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton(
-                            onPressed: _submit,
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const HomeScreen(),
+                                ),
+                            );
+                          },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF667DB5),
                               foregroundColor: Colors.white,
