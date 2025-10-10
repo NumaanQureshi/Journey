@@ -3,3 +3,15 @@
 
 # .venv file
 .venv/
+
+# Flutter files
+android/
+assets/
+ios/
+lib/
+linux/
+macos/
+test/
+web/
+windows/
+.flutter-plugin-dependencies
