@@ -38,6 +38,15 @@ migrate_working_dir/
 /ios/build/
 /coverage/
 
+# Generated Files
+macos/Flutter/GeneratedPluginRegistrant.swift
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
 
 # Operating system specific folders
 /windows/flutter/ephemeral/
