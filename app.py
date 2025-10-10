@@ -3,9 +3,17 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
+from werkzeug.security import generate_password_hash, check_password_hash   # Password Hashing
+import jwt                                                                  # Encode / Decode
+import datetime
+from functools import wraps
+
+
 load_dotenv()
-app = Flask(__name__) #creates a Flask application
+app = Flask(__name__) # creates a Flask application
+
 DATABASE_URL = os.getenv('DATABASE_URL')
+
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL)
     return conn
@@ -111,6 +119,4 @@ def delete_user(user_id):
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
 
