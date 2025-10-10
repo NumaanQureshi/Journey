@@ -38,6 +38,10 @@ migrate_working_dir/
 /ios/build/
 /coverage/
 
+# Python related
+.env
+.venv/
+
 # Generated Files
 macos/Flutter/GeneratedPluginRegistrant.swift
 linux/flutter/generated_plugin_registrant.cc
@@ -71,3 +75,4 @@ app.*.map.json
 /android/.idea/
 /android/local.properties
 /android/key.properties
+
