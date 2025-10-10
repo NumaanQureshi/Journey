@@ -5,6 +5,7 @@
 .venv/
 
 # Flutter files
+.dart_tool
 android/
 assets/
 ios/
@@ -14,4 +15,4 @@ macos/
 test/
 web/
 windows/
-.flutter-plugin-dependencies
+.flutter-plugins-dependencies
