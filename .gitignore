@@ -39,8 +39,11 @@ migrate_working_dir/
 /coverage/
 
 # Python related
-.env
+__pycache__/
+*.pyc
 .venv/
+venv/
+.env
 
 # Generated Files
 macos/Flutter/GeneratedPluginRegistrant.swift
