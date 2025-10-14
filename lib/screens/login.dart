@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:journey_application/screens/home_screen.dart';
+import 'home_screen.dart';
+import 'sign_up.dart';
+
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -21,15 +23,18 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  // void _submit() {
-  //   if (_formKey.currentState?.validate() ?? false) {
-  //     final email = _emailController.text.trim();
-  //     // TODO: replace with real authentication logic and use the password
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text('Logging in as $email')));
-  //   }
-  // }
+  void _submit() {
+    if (_formKey.currentState?.validate() ?? false) {
+      // TODO: replace with real authentication logic
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logging in...')),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,14 +51,12 @@ class _LoginState extends State<Login> {
           SizedBox.expand(
             child: Image.asset('assets/images/blur_bg.png', fit: BoxFit.cover),
           ),
-          // Input Fields
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Center(
-              child: SingleChildScrollView(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextFormField(
@@ -64,13 +67,18 @@ class _LoginState extends State<Login> {
                           fillColor: Colors.white.withValues(alpha: 0.90),
                           labelText: 'Email',
                           prefixIcon: const Icon(Icons.person),
+                          floatingLabelStyle: const TextStyle(color: Colors.black),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.0),
                           ),
                         ),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Please enter your email or username';
+                            return 'Please enter your email';
+                          }
+                          // email validator
+                          if (!v.contains('@') || !v.contains('.')) {
+                            return 'Please enter a valid email';
                           }
                           return null;
                         },
@@ -84,6 +92,7 @@ class _LoginState extends State<Login> {
                           fillColor: Colors.white.withValues(alpha: 0.90),
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock),
+                          floatingLabelStyle: const TextStyle(color: Colors.black),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.0),
                           ),
@@ -101,65 +110,85 @@ class _LoginState extends State<Login> {
                           if (v == null || v.isEmpty) {
                             return 'Please enter your password';
                           }
+                          // password validator
                           if (v.length < 6) {
                             return 'Password must be at least 6 characters';
                           }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 20), // Spacing
-                      // Log In Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          // onPressed: _submit,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const HomeScreen(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFBF6A02),
-                          ),
-                          child: const Text(
-                            'Log In',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 16), // Spacing
-                      // Or divider
-                      const Row(
-                        children: [
-                          Expanded(child: Divider(thickness: 2)),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Text(
-                              'OR',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                          Expanded(child: Divider(thickness: 2)),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16), // Spacing
-
-                      // TODO: Google Sign In Button
                     ],
                   ),
-                ),
+              ),
+            ),
+          ),
+          // buttons
+          Positioned(
+            bottom: 50,
+            left: 0,
+            right: 0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: 150,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFBF6A02),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Log In', style: TextStyle(fontSize: 18)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Row(
+                    children: [
+                      Expanded(child: Divider(thickness: 2)),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('OR', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black)),
+                      ),
+                      Expanded(child: Divider(thickness: 2)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: 300,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      icon: Image.asset('assets/images/google_logo.png', height: 24.0),
+                      label: const Text('Sign in with Google', style: TextStyle(fontSize: 18, color: Colors.black87)),
+                      onPressed: () {
+                        // TODO: Implement Google Sign-In logic
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 100),
+                  SizedBox(
+                    width: 300,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SignUp()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF667DB5),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text("Don't have an Account?", style: TextStyle(fontSize: 18)),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
