@@ -107,11 +107,11 @@ def update_user(user_id):
 
 # @app.route('/api/users/<int:user_id>/password', methods=['PUT'])
 # def update_password(user_id):
-    try:
+    #try:
 
 #@app.route('/api/auth/login', methods=['POST'])
 #def login():
-    try:
+    #try:
 # DELETE user
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
