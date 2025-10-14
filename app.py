@@ -3,7 +3,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
-from werkzeug.security import generate_password_hash, check_password_hash   # Password Hashing
+import bcrypt
 import jwt                                                                  # Encode / Decode
 import datetime
 from functools import wraps
@@ -73,9 +73,11 @@ def create_user():
         data = request.get_json()
         conn = get_db_connection()
         cur = conn.cursor()
+        password = data['password']
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         cur.execute(
             'INSERT INTO users (username, email, password_hash, age, gender, height_in, weight_lb) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id;',
-            (data['username'], data['email'], data['password_hash'], data.get('age'), data.get('gender'), data.get('height_in'), data.get('weight_lb'))
+            (data['username'], data['email'], password_hash, data.get('age'), data.get('gender'), data.get('height_in'), data.get('weight_lb'))
         )
         user_id = cur.fetchone()['id']
         conn.commit()
@@ -103,6 +105,13 @@ def update_user(user_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+# @app.route('/api/users/<int:user_id>/password', methods=['PUT'])
+# def update_password(user_id):
+    try:
+
+#@app.route('/api/auth/login', methods=['POST'])
+#def login():
+    try:
 # DELETE user
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
