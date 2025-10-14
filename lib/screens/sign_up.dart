@@ -26,7 +26,7 @@ class _SignUpState extends State<SignUp> {
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Hook up real sign up logic (API / Firebase / etc.)
+      // TODO: Implement real sign up logic
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Creating account...')),
       );
