@@ -33,6 +33,7 @@ class SideMenu extends StatelessWidget {
                   child: Center(
                     child: Column(
                       children: const [
+                        SizedBox(height: 12),
                         CircleAvatar(
                           radius: 28,
                           backgroundColor: Color(0xFF667DB5),
@@ -42,15 +43,8 @@ class SideMenu extends StatelessWidget {
                             color: Colors.white
                           ),
                         ),
-                        SizedBox(height: 12),
+                        SizedBox(height: 16),
                         Text('Your Name', style: TextStyle(color: Colors.white, fontSize: 18)),
-                        SizedBox(height: 4),
-                        Text(
-                          'youremail@example.com',
-                          style: TextStyle(
-                            color: Colors.white70
-                          )
-                        ),
                       ],
                     ),
                   )
@@ -71,18 +65,42 @@ class SideMenu extends StatelessWidget {
                   onTap: () => _notImplemented(context),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.fitness_center),
-                  title: const Text('Workout'),
+                  leading: const Icon(Icons.fitness_center, color: Colors.red),
+                  title: const Text(
+                    'Workout',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                  tileColor: Colors.transparent,
+                  selectedTileColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
                   onTap: () => _notImplemented(context),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.emoji_events),
-                  title: const Text('Challenges'),
+                  leading: const Icon(Icons.emoji_events, color: Colors.amber),
+                  title: const Text(
+                    'Challenges',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                  tileColor: Colors.transparent,
+                  selectedTileColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
                   onTap: () => _notImplemented(context),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.leaderboard),
-                  title: const Text('Leaderboard'),
+                  leading: const Icon(Icons.leaderboard, color: Colors.green),
+                  title: const Text(
+                    'Leaderboard',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                  tileColor: Colors.transparent,
+                  selectedTileColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
                   onTap: () => _notImplemented(context),
                 ),
                 const Spacer(),
