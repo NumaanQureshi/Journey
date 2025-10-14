@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:journey_application/screens/home_screen.dart';
+import 'home_screen.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -54,7 +54,8 @@ class _SignUpState extends State<SignUp> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
               child: Card(
-                color: Color.fromRGBO(255, 255, 255, 0.9),
+                // color: Color.fromRGBO(255, 255, 255, 0.9),
+                color: Colors.transparent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -67,13 +68,19 @@ class _SignUpState extends State<SignUp> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.90),
                             labelText: 'Email',
-                            prefixIcon: Icon(Icons.email),
+                            prefixIcon: const Icon(Icons.email),
+                            floatingLabelStyle: const TextStyle(color: Colors.black54),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
                           ),
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Enter your email';
-                            if (!value.contains('@')) return 'Enter a valid email';
+                            if (value == null || value.trim().isEmpty) return 'Enter your email';
+                            if (!value.contains('@') || !value.contains('.')) return 'Enter a valid email';
                             return null;
                           },
                         ),
@@ -81,12 +88,18 @@ class _SignUpState extends State<SignUp> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: true,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.90),
                             labelText: 'Password',
-                            prefixIcon: Icon(Icons.lock),
+                            prefixIcon: const Icon(Icons.lock),
+                            floatingLabelStyle: const TextStyle(color: Colors.black54),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
                           ),
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Enter a password';
+                            if (value == null || value.trim().isEmpty) return 'Enter a password';
                             if (value.length < 6) return 'Password must be at least 6 characters';
                             return null;
                           },
@@ -95,20 +108,29 @@ class _SignUpState extends State<SignUp> {
                         TextFormField(
                           controller: _confirmController,
                           obscureText: true,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.90),
                             labelText: 'Confirm Password',
-                            prefixIcon: Icon(Icons.lock_outline),
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            floatingLabelStyle: const TextStyle(color: Colors.black54),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
                           ),
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Confirm your password';
+                            if (value == null || value.trim().isEmpty)
+                            {
+                              return 'Confirm your password';
+                            }
                             if (value != _passwordController.text) return 'Passwords do not match';
                             return null;
                           },
                         ),
                         const SizedBox(height: 20),
                         SizedBox(
-                          width: double.infinity,
-                          height: 48,
+                          width: 200,
+                          height: 50,
                           child: ElevatedButton(
                             onPressed: () {
                               Navigator.push(
@@ -122,7 +144,7 @@ class _SignUpState extends State<SignUp> {
                               backgroundColor: const Color(0xFF667DB5),
                               foregroundColor: Colors.white,
                             ),
-                            child: const Text('Create account'),
+                            child: const Text('Create Account', style: TextStyle(fontSize: 18)),
                           ),
                         ),
                         const SizedBox(height: 8),
