@@ -41,6 +41,7 @@ class _LoginState extends State<Login> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(size: 30, color: Color(0xFFFBBF18)),
