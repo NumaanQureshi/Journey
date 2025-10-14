@@ -13,6 +13,8 @@ class _SignUpState extends State<SignUp> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -22,15 +24,18 @@ class _SignUpState extends State<SignUp> {
     super.dispose();
   }
 
-  // void _submit() {
-  //   if (_formKey.currentState?.validate() ?? false) {
-  //     // TODO: Hook up real sign up logic (API / Firebase / etc.)
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Account created successfully')),
-  //     );
-  //     Navigator.pop(context); // Return to previous screen (e.g., login)
-  //   }
-  // }
+  void _submit() {
+    if (_formKey.currentState?.validate() ?? false) {
+      // TODO: Hook up real sign up logic (API / Firebase / etc.)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Creating account...')),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +92,7 @@ class _SignUpState extends State<SignUp> {
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _passwordController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white.withValues(alpha: 0.90),
@@ -96,6 +101,14 @@ class _SignUpState extends State<SignUp> {
                             floatingLabelStyle: const TextStyle(color: Colors.black54),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
                           ),
                           validator: (value) {
@@ -107,7 +120,7 @@ class _SignUpState extends State<SignUp> {
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _confirmController,
-                          obscureText: true,
+                          obscureText: _obscureConfirmPassword,
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white.withValues(alpha: 0.90),
@@ -116,6 +129,14 @@ class _SignUpState extends State<SignUp> {
                             floatingLabelStyle: const TextStyle(color: Colors.black54),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                             ),
                           ),
                           validator: (value) {
@@ -132,14 +153,7 @@ class _SignUpState extends State<SignUp> {
                           width: 200,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const HomeScreen(),
-                                ),
-                            );
-                          },
+                            onPressed: _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF667DB5),
                               foregroundColor: Colors.white,
@@ -147,14 +161,28 @@ class _SignUpState extends State<SignUp> {
                             child: const Text('Create Account', style: TextStyle(fontSize: 18)),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Back to Log in'),
-                        ),
                       ],
                     ),
                   ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 50,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFBF6A02),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Already have an Account?', style: TextStyle(fontSize: 18)),
                 ),
               ),
             ),
