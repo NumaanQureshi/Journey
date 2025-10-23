@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class Friend extends StatefulWidget {
   const Friend({super.key});
@@ -8,7 +9,7 @@ class Friend extends StatefulWidget {
 }
 
 class _FriendState extends State<Friend> {
-  // In-memory placeholder list; replace with DB-backed source later.
+  // TODO: replace with DB friends later.
   final List<String> _friends = ['Friend 1', 'Friend 2', 'Friend 3'];
 
   void _addFriend(String name) {
@@ -45,58 +46,81 @@ class _FriendState extends State<Friend> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        iconTheme: const IconThemeData(color: Colors.blue),
+        title: Text(
           'Friends',
-          style: TextStyle(
-            color: Color(0xFFFBBF18),
-          )
+          style: GoogleFonts.lexend(
+            color: const Color(0xFFFBBF18),
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.black,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Your friends', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                ElevatedButton.icon(
-                  onPressed: _showAddDialog,
-                  icon: const Icon(Icons.person_add),
-                  label: const Text('Add a Friend'),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF667DB5)),
-                ),
-              ],
+          SizedBox.expand(
+            child: Image.asset(
+              'assets/images/profile_bg.png',
+              fit: BoxFit.cover,
             ),
           ),
-          const Divider(height: 1),
-          Expanded(
-            child: _friends.isEmpty
-                ? const Center(child: Text('No friends yet'))
-                : ListView.separated(
-                    itemCount: _friends.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final name = _friends[index];
-                      return ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.person)),
-                        title: Text(name),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () {
-                            setState(() => _friends.removeAt(index));
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Removed $name')));
-                          },
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Text('Note: Friends are currently stored locally; DB integration coming soon.', style: TextStyle(color: Colors.grey[600])),
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Your friends',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+                    ElevatedButton.icon(
+                      onPressed: _showAddDialog,
+                      icon: const Icon(Icons.person_add),
+                      label: const Text('Add a Friend'),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF667DB5),
+                          foregroundColor: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Colors.white30),
+              Expanded(
+                child: _friends.isEmpty
+                    ? const Center(
+                        child:
+                            Text('No friends yet', style: TextStyle(color: Colors.white)))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(8.0),
+                        itemCount: _friends.length,
+                        itemBuilder: (context, index) {
+                          final name = _friends[index];
+                          return Card(
+                            color: Colors.white,
+                            child: ListTile(
+                              leading:
+                                  const CircleAvatar(child: Icon(Icons.person)),
+                              title: Text(name,
+                                  style: const TextStyle(color: Colors.black87)),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    color: Colors.redAccent),
+                                onPressed: () {
+                                  setState(() => _friends.removeAt(index));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Removed $name')));
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text('Note: Friends are currently stored locally; DB integration coming soon.', style: TextStyle(color: Colors.grey[400])),
+              ),
+            ],
           ),
         ],
       ),
