@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:journey_application/screens/workout_screen.dart';
 
 class SideMenu extends StatelessWidget {
   const SideMenu({super.key});
@@ -75,7 +76,11 @@ class SideMenu extends StatelessWidget {
                   tileColor: Colors.transparent,
                   selectedTileColor: Colors.transparent,
                   hoverColor: Colors.transparent,
-                  onTap: () => _notImplemented(context),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => const Workout()));
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.emoji_events, color: Colors.amber),
