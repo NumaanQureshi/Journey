@@ -79,3 +79,5 @@ app.*.map.json
 /android/local.properties
 /android/key.properties
 
+# Tools Folder
+/tools/
