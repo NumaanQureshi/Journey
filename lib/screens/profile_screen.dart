@@ -56,7 +56,9 @@ class Profile extends StatelessWidget {
                       icon: const Icon(Icons.group),
                       label: const Text('Friends', style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF667DB5)),
+                          backgroundColor: const Color(0xFF667DB5),
+                          foregroundColor: Colors.white,
+                      ),
                       onPressed: () {
                         Navigator.push(
                           context,
