@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:journey_application/screens/challenges_screen.dart';
+import 'package:journey_application/screens/home_screen.dart';
 import 'package:journey_application/screens/workout_screen.dart';
 
 class SideMenu extends StatelessWidget {
-  const SideMenu({super.key});
+  final String? currentScreen;
+
+  const SideMenu({super.key, this.currentScreen});
 
   void _notImplemented(BuildContext context) {
     Navigator.pop(context);
@@ -14,15 +18,15 @@ class SideMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color.fromARGB(255, 48, 48, 48),
       child: Stack(
         children: [
-          SizedBox.expand(
-              child: Image.asset(
-                'assets/images/drawer_bg.png',
-                fit: BoxFit.cover,
-                ),
-          ),
+          // SizedBox.expand(
+          //     child: Image.asset(
+          //       'assets/images/drawer_bg.png',
+          //       fit: BoxFit.cover,
+          //       ),
+          // ),
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -51,6 +55,25 @@ class SideMenu extends StatelessWidget {
                   )
                 ),
                 ListTile(
+                  leading: const Icon(Icons.home, color: Colors.white),
+                  title: const Text(
+                    'Home',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                  selected: currentScreen == 'Home',
+                  selectedTileColor: Colors.grey.withValues(alpha: 0.3),
+                  hoverColor: Colors.transparent,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (currentScreen != 'Home') {
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => const HomeScreen()));
+                    }
+                  },
+                ),
+                ListTile(
                   leading: const Icon(
                     Icons.smart_toy,
                     color: Colors.blue),
@@ -73,13 +96,15 @@ class SideMenu extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-                  tileColor: Colors.transparent,
-                  selectedTileColor: Colors.transparent,
+                  selected: currentScreen == 'Workout',
+                  selectedTileColor: Colors.grey.withValues(alpha: 0.3),
                   hoverColor: Colors.transparent,
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => const Workout()));
+                    if (currentScreen != 'Workout') {
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => const Workout()));
+                    }
                   },
                 ),
                 ListTile(
@@ -90,10 +115,16 @@ class SideMenu extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-                  tileColor: Colors.transparent,
-                  selectedTileColor: Colors.transparent,
+                  selected: currentScreen == 'Challenges',
+                  selectedTileColor: Colors.grey.withValues(alpha: 0.3),
                   hoverColor: Colors.transparent,
-                  onTap: () => _notImplemented(context),
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (currentScreen != 'Challenges') {
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => const Challenges()));
+                    }
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.leaderboard, color: Colors.green),
