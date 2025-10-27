@@ -6,6 +6,18 @@ class LoginScreen extends StatelessWidget
 {
   const LoginScreen({super.key});
 
+  Route _createFadeRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
+    );
+  }
+
   @override
     Widget build(BuildContext context) {
       return Scaffold(
@@ -55,12 +67,7 @@ class LoginScreen extends StatelessWidget
                     ),
                     // Log In Function
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const Login(),
-                        ),
-                      );
+                      Navigator.push(context, _createFadeRoute(const Login()));
                     },
                     child: const Text(
                       'Log In',
@@ -89,10 +96,7 @@ class LoginScreen extends StatelessWidget
                     ),
                     // Sign Up Function
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SignUp()),
-                      );
+                      Navigator.push(context, _createFadeRoute(const SignUp()));
                     },
                     child: const Text(
                       'Sign Up',
