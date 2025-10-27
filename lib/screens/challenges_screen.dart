@@ -17,7 +17,7 @@ class Challenges extends StatelessWidget {
         color: color.withValues(alpha: 0.75),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(10.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -25,13 +25,18 @@ class Challenges extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 title,
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold),
+                style: GoogleFonts.mavenPro(
+                    color: Colors.white,
+                    fontSize: 14
+                    ),
                 textAlign: TextAlign.center,
               ),
               Text(
                 subtitle,
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: const TextStyle(
+                  color: Colors.white70, 
+                  fontSize: 12
+                  ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -72,7 +77,15 @@ class Challenges extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Daily Challenges', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                  Center(
+                    child: Text(
+                      'Daily Challenges', 
+                      style: GoogleFonts.kanit(
+                        color: const Color(0xFFFBBF18),
+                        fontSize: 16
+                      ),
+                    )
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
