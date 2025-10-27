@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'side_menu.dart';
 
 class Workout extends StatelessWidget {
   const Workout({super.key});
@@ -13,6 +14,7 @@ class Workout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const SideMenu(currentScreen: 'Workout'),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.blue),
