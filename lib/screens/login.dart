@@ -16,13 +16,16 @@ class _LoginState extends State<Login> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscure = true;
 
-  // Helper for creating a fade transition route
-  Route _createFadeRoute(Widget page) {
+  // Helper for creating a slide transition route
+  Route _createSlideRoute(Widget page) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: animation,
+        const begin = Offset(1.0, 0.0);
+        const end = Offset.zero;
+        final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.ease));
+        return SlideTransition(
+          position: animation.drive(tween),
           child: child,
         );
       },
@@ -43,7 +46,7 @@ class _LoginState extends State<Login> {
       );
       Navigator.pushReplacement(
         context,
-        _createFadeRoute(const HomeScreen()),
+        _createSlideRoute(const HomeScreen()),
       );
     }
   }
@@ -189,7 +192,7 @@ class _LoginState extends State<Login> {
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.push(context, _createFadeRoute(const SignUp()));
+                        Navigator.push(context, _createSlideRoute(const SignUp()));
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF667DB5),
