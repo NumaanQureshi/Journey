@@ -16,6 +16,18 @@ class _LoginState extends State<Login> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscure = true;
 
+  // Helper for creating a fade transition route
+  Route _createFadeRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
+    );
+  }
   @override
   void dispose() {
     _emailController.dispose();
@@ -31,7 +43,7 @@ class _LoginState extends State<Login> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        _createFadeRoute(const HomeScreen()),
       );
     }
   }
@@ -177,10 +189,7 @@ class _LoginState extends State<Login> {
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const SignUp()),
-                        );
+                        Navigator.push(context, _createFadeRoute(const SignUp()));
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF667DB5),
