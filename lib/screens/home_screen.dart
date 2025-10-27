@@ -14,7 +14,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const SideMenu(),
+      drawer: const SideMenu(currentScreen: 'Home'),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: true,
