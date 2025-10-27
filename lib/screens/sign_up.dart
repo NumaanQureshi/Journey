@@ -16,6 +16,19 @@ class _SignUpState extends State<SignUp> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  // Helper for creating a fade transition route
+  Route _createFadeRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -32,7 +45,7 @@ class _SignUpState extends State<SignUp> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        _createFadeRoute(const HomeScreen()),
       );
     }
   }
