@@ -57,11 +57,15 @@ windows/flutter/generated_plugins.cmake
 
 # Operating system specific folders
 /windows/flutter/ephemeral/
-/linux/flutter/ephemeral/
-/macos/Flutter/ephemeral/
-/macos/build/
-/linux/build/
 /windows/build/
+/linux/flutter/ephemeral/
+/linux/build/
+/macos/Flutter/ephemeral/
+/macos/Flutter/Flutter-Debug.xcconfig
+/macos/Flutter/Flutter-Release.xcconfig
+/macos/build/
+/macos/Podfile
+
 
 # Symbolication related
 app.*.symbols
@@ -79,5 +83,7 @@ app.*.map.json
 /android/local.properties
 /android/key.properties
 
-# Tools Folder
-/tools/
+# iOS Flutter Files
+/ios/Flutter/Debug.xcconfig
+/ios/Flutter/Release.xcconfig
+/ios/Podfile
