@@ -54,7 +54,6 @@ windows/flutter/generated_plugin_registrant.cc
 windows/flutter/generated_plugin_registrant.h
 windows/flutter/generated_plugins.cmake
 
-
 # Operating system specific folders
 /windows/flutter/ephemeral/
 /windows/build/
@@ -65,7 +64,6 @@ windows/flutter/generated_plugins.cmake
 /macos/Flutter/Flutter-Release.xcconfig
 /macos/build/
 /macos/Podfile
-
 
 # Symbolication related
 app.*.symbols
@@ -87,3 +85,6 @@ app.*.map.json
 /ios/Flutter/Debug.xcconfig
 /ios/Flutter/Release.xcconfig
 /ios/Podfile
+
+# Personal Files
+tools/
