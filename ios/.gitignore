@@ -24,8 +24,14 @@ Flutter/app.flx
 Flutter/app.zip
 Flutter/flutter_assets/
 Flutter/flutter_export_environment.sh
+Flutter/debug.xcconfig
+Flutter/Release.xcconfig
+Flutter/Debug.xcconfig
+Flutter/Release.xcconfig
+Podfile
 ServiceDefinitions.json
 Runner/GeneratedPluginRegistrant.*
+Podfile.lock
 
 # Exceptions to above rules.
 !default.mode1v3
