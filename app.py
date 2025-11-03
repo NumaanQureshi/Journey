@@ -12,8 +12,8 @@ from functools import wraps
 load_dotenv()
 app = Flask(__name__) # creates a Flask application
 
-DATABASE_URL = os.getenv('DATABASE_URL')
-JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key')
+DATABASE_URL= os.getenv("DATABASE_URL")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -112,7 +112,7 @@ def register():
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute( """
-            INSERT INTO users (username, email, password, age, gender, height_in, weight_lb) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id, username, email, age, gender, height_in, weight_lb, created_at""",
+            INSERT INTO users (username, email, password_hash, age, gender, height_in, weight_lb) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id, username, email, age, gender, height_in, weight_lb, created_at""",
             (user_login_info['username'],user_login_info['email'],password_hash,user_login_info.get('age'),user_login_info.get('gender'),user_login_info.get('height_in'),user_login_info.get('weight_lb')))
         user = cur.fetchone()
         user_id = int(user[0])
@@ -127,6 +127,21 @@ def register():
             JWT_SECRET_KEY,
             algorithm='HS256'
         )
+        return jsonify({
+            'success': True,
+            'message': 'Registration successful',
+            'user': {
+                'id': user[0],
+                'username': user[1],
+                'email': user[2],
+                'age': user[3],
+                'gender': user[4],
+                'height_in': user[5],
+                'weight_lb': user[6],
+                'created_at': str(user[7])
+            },
+            'token': token
+        }), 201
     except psycopg2.errors.UniqueViolation as e:
         if conn:
             conn.rollback()
@@ -202,7 +217,16 @@ def update_user(user_id):
         return jsonify({
             'success': True,
             'message': 'Profile updated successfully',
-            'user': dict(user)
+            'user': {
+                'id': user[0],
+                'username': user[1],
+                'email': user[2],
+                'age': user[3],
+                'gender': user[4],
+                'height_in': user[5],
+                'weight_lb': user[6],
+                'updated_at': str(user[7])
+            }
         }), 200
 
     except Exception as e:
@@ -267,7 +291,7 @@ def update_password(user_id):
                 'error': 'User not found'
             }), 404
 
-        if not bcrypt.checkpw(old_password.encode('utf-8'), user[3].encode('utf-8')):
+        if not bcrypt.checkpw(old_password.encode('utf-8'), user[0].encode('utf-8')):
             return jsonify({
                 'success': False,
                 'error': 'Current password is incorrect'
@@ -332,13 +356,14 @@ def login():
         )
         user = cur.fetchone()
         user_id = user[0]
+        password_hash = user[3]
         if not user:
             return jsonify({
                 'success': False,
                 'error': 'Invalid email or password'
             }), 401
         # Verify password with bcrypt
-        if not bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
+        if not bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8')):
             return jsonify({
                 'success': False,
                 'error': 'Invalid email or password'
@@ -353,8 +378,16 @@ def login():
             algorithm='HS256'
         )
         # Remove password_hash from response
-        user_data = dict(user)
-        user_data.pop('password_hash')
+        user_data = {
+            'id': user[0],
+            'username': user[1],
+            'email': user[2],
+            'age': user[4],
+            'gender': user[5],
+            'height_in': user[6],
+            'weight_lb': user[7],
+            'created_at': str(user[8])
+        }
 
         return jsonify({
             'success': True,
