@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'side_menu.dart';
 import 'dart:core'; 
-// import 'dart:async';
 
-class Workout extends StatelessWidget {
+class Workout extends StatefulWidget {
   const Workout({super.key});
 
-  // void _notImplemented(BuildContext context) {
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(content: Text('Not Implemented')),
-  //   );
-  // }
+  @override
+  State<Workout> createState() => _WorkoutState();
+}
+
+class _WorkoutState extends State<Workout> {
+  int _selectedIndex = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -38,37 +38,58 @@ class Workout extends StatelessWidget {
               fit: BoxFit.cover,
             ),
           ),
-          Positioned(
-            left: 20,
-            bottom: 10,
-            child: Center(
-              child: Column(
-                children: [
-                  Text('Test 1'),
-                  Text('Test 2'),
-                  Text('Test 3'),
-                ],
-              )
-            ) 
-          )
         ],
+      ),
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          indicatorColor: Colors.grey,
+          labelTextStyle: WidgetStateProperty.all(
+            const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          backgroundColor: Colors.black,
+          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+          onDestinationSelected: (int index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          destinations: const <Widget>[
+            NavigationDestination(
+              icon: Icon(
+                Icons.bookmark_border, 
+                color: Colors.amber,
+              ),
+              selectedIcon: Icon(
+                Icons.bookmark, 
+                color: Colors.amber,
+              ), 
+              label: 'Plans'
+            ),
+            NavigationDestination(
+              icon: Icon(
+                Icons.fitness_center,
+                color: Colors.red,
+                size: 36,
+              ),
+              label: '',
+            ),
+            NavigationDestination(
+              selectedIcon: Icon(
+                Icons.calendar_month,
+                color: Colors.blue
+              ),
+              icon: Icon(
+                Icons.calendar_today,
+                color: Colors.blue
+              ),
+              label: 'Logs',
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-//   Widget _buildCircularIconButton(BuildContext context, {required IconData icon, required String tooltip, required VoidCallback onPressed, required Color color}) {
-//     return Container(
-//       decoration: BoxDecoration(
-//         color: color,
-//         shape: BoxShape.circle,
-//       ),
-//       child: IconButton(
-//         icon: Icon(icon),
-//         iconSize: 48,
-//         color: Colors.white,
-//         onPressed: onPressed,
-//         tooltip: tooltip,
-//       ),
-//     );
-//   }
-// }
