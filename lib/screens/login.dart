@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'sign_up.dart';
+import '../authentication/authentication.dart';
 
 
 class Login extends StatefulWidget {
@@ -15,6 +16,7 @@ class _LoginState extends State<Login> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscure = true;
+  final AuthService _authService = AuthService();
 
   // Helper for creating a slide transition route
   Route _createSlideRoute(Widget page) {
@@ -38,18 +40,36 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // TODO: replace with real authentication logic
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Logging in...')),
+        const SnackBar(content: Text('Attempting login...')), // debug statement
       );
-      Navigator.pushReplacement(
-        context,
-        _createSlideRoute(const HomeScreen()),
+
+      final success = await _authService.login(
+        _emailController.text,
+        _passwordController.text,
       );
-    }
+
+      if (!mounted) return; 
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful!')), // debug statement
+        );
+        Navigator.pushReplacement(
+          context,
+          _createSlideRoute(const HomeScreen()), // successful login
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login failed. Please check your credentials.')),
+        );
+      }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +83,7 @@ class _LoginState extends State<Login> {
       ),
       body: Stack(
         children: [
-          // Background
+          // background
           SizedBox.expand(
             child: Image.asset('assets/images/blur_bg.png', fit: BoxFit.cover),
           ),
@@ -123,6 +143,7 @@ class _LoginState extends State<Login> {
                           ),
                         ),
                         validator: (v) {
+                          // TODO: use proper and secure password rules and validation
                           if (v == null || v.isEmpty) {
                             return 'Please enter your password';
                           }
@@ -157,33 +178,6 @@ class _LoginState extends State<Login> {
                         foregroundColor: Colors.white,
                       ),
                       child: const Text('Log In', style: TextStyle(fontSize: 18)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Row(
-                    children: [
-                      Expanded(child: Divider(thickness: 2)),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('OR', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black)),
-                      ),
-                      Expanded(child: Divider(thickness: 2)),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: 300,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      icon: Image.asset('assets/images/google_logo.png', height: 24.0),
-                      label: const Text('Sign in with Google', style: TextStyle(fontSize: 18, color: Colors.black87)),
-                      onPressed: () {
-                        // TODO: Implement Google Sign-In logic
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 100),
