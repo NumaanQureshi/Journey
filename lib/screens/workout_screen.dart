@@ -13,6 +13,15 @@ class Workout extends StatefulWidget {
 class _WorkoutState extends State<Workout> {
   int _selectedIndex = 1;
 
+  // TODO: demo logic. add backend logic later
+  int _streakLevel = 0; // 0: none, 1: small, 2: medium, 3: high
+  final List<Color> _streakColors = [
+    Colors.grey.shade700,
+    Colors.orangeAccent,
+    Colors.orange,
+    Colors.red,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,6 +38,25 @@ class _WorkoutState extends State<Workout> {
         centerTitle: true,
         backgroundColor: Colors.black,
         elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: IconButton(
+              tooltip: 'Workout Streak',
+              icon: Icon(
+                Icons.local_fire_department,
+                color: _streakColors[_streakLevel],
+                size: 28,
+              ),
+              onPressed: () {
+                // TODO: demo logic. add backend logic later
+                setState(() {
+                  _streakLevel = (_streakLevel + 1) % _streakColors.length;
+                });
+              },
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
