@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:journey_application/screens/login.dart';
 import 'home_screen.dart';
+import '../authentication/authentication.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -15,8 +17,8 @@ class _SignUpState extends State<SignUp> {
   final TextEditingController _confirmController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  final AuthService _authService = AuthService();
 
-  // Helper for creating a slide transition route
   Route _createSlideRoute(Widget page) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => page,
@@ -40,16 +42,34 @@ class _SignUpState extends State<SignUp> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Implement real sign up logic
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Creating account...')),
       );
-      Navigator.pushReplacement(
-        context,
-        _createSlideRoute(const HomeScreen()),
+
+      final success = await _authService.signUp(
+        _emailController.text,
+        _passwordController.text,
       );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account created! Please log in.')),
+        );
+        Navigator.pushReplacement(
+          context,
+          _createSlideRoute(const HomeScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign up failed. Please try again.')),
+        );
+      }
     }
   }
 
@@ -193,7 +213,10 @@ class _SignUpState extends State<SignUp> {
                 width: 300,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pushReplacement(
+                    context,
+                    _createSlideRoute(const Login()),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFBF6A02),
                     foregroundColor: Colors.white,
