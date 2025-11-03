@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:journey_application/screens/challenges_screen.dart';
 import 'package:journey_application/screens/home_screen.dart';
 import 'package:journey_application/screens/workout_screen.dart';
+import 'package:journey_application/screens/settings_screen.dart';
 
 class SideMenu extends StatelessWidget {
   final String? currentScreen;
@@ -21,20 +22,11 @@ class SideMenu extends StatelessWidget {
       backgroundColor: const Color.fromARGB(255, 48, 48, 48),
       child: Stack(
         children: [
-          // SizedBox.expand(
-          //     child: Image.asset(
-          //       'assets/images/drawer_bg.png',
-          //       fit: BoxFit.cover,
-          //       ),
-          // ),
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 DrawerHeader(
-                  // decoration: BoxDecoration(
-                  //   color: Colors.black
-                  // ),
                   child: Center(
                     child: Column(
                       children: const [
@@ -148,7 +140,10 @@ class SideMenu extends StatelessWidget {
                       backgroundColor: Colors.grey.shade200,
                       minimumSize: const Size.fromHeight(48),
                     ),
-                    onPressed: () => _notImplemented(context),
+                    onPressed: () {
+                      Navigator.pop(context); 
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                    },
                     icon: const Icon(Icons.settings),
                     label: const Text('Settings'),
                   ),
