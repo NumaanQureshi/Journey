@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:journey_application/screens/login_screen.dart';
+import 'screens/login_screen.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const Journey());
 }
@@ -14,10 +14,6 @@ class Journey extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      // theme: ThemeData(
-
-      //   colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
-      // ),
       home: const LoginScreen(),
     );
   }
