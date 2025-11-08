@@ -8,6 +8,7 @@ import bcrypt
 import jwt                      # Encode / Decode
 import datetime
 from functools import wraps
+from sql_loader import load_sql_query
 
 
 load_dotenv()
@@ -63,12 +64,14 @@ def test_db():
         return jsonify({"success": False, "error": str(e)})
 # GET all users
 @app.route('/api/users', methods=['GET'])
-def get_users():
+def get_all_users():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # cur.execute('SELECT id, username, email, age, gender, height_in, weight_lb, created_at FROM users;')
-        cur.execute('SELECT id, email, age, gender, height_in, weight_lb, created_at FROM users;')
+        
+        sql_query = load_sql_query('select_all_users.sql')        
+        cur.execute(sql_query)
+        
         users = cur.fetchall()
         cur.close()
         conn.close()
@@ -82,8 +85,8 @@ def get_user(user_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # cur.execute('SELECT id, username, email, age, gender, height_in, weight_lb, created_at FROM users WHERE id = %s;', (user_id,))
-        cur.execute('SELECT id, email, age, gender, height_in, weight_lb, created_at FROM users WHERE id = %s;', (user_id,))        
+        sql_query = load_sql_query('select_user_by_id.sql')
+        cur.execute(sql_query, (user_id,))        
         user = cur.fetchone()
         cur.close()
         conn.close()
@@ -101,8 +104,6 @@ def register():
     cur = None
     try:
         user_login_info = request.get_json()
-        # if not user_login_info.get('username'):
-        #     return jsonify({'success': False, 'error': 'Username is required'}), 400
         if not user_login_info.get('email'):
             return jsonify({'success': False, 'error': 'Email is required'}), 400
         if not user_login_info.get('password'):
@@ -116,27 +117,33 @@ def register():
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         conn = get_db_connection()
         cur = conn.cursor()
-        # cur.execute( """
-        #     INSERT INTO users (username, email, password_hash, age, gender, height_in, weight_lb) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id, username, email, age, gender, height_in, weight_lb, created_at""",
-        #     (user_login_info['username'],user_login_info['email'],password_hash,user_login_info.get('age'),user_login_info.get('gender'),user_login_info.get('height_in'),user_login_info.get('weight_lb')))
-        cur.execute("""
-            INSERT INTO users (email, password_hash, age, gender, height_in, weight_lb) 
-            VALUES (%s, %s, %s, %s, %s, %s) 
-            RETURNING id, email, age, gender, height_in, weight_lb, created_at""",
+        insert_user_sql = load_sql_query('insert_user_core.sql')
+        cur.execute(insert_user_sql,
             (
                 user_login_info['email'],
                 password_hash,
+            )
+        )
+        user_id = cur.fetchone()[0]
+        insert_profile_sql = load_sql_query('insert_profile.sql')
+        cur.execute(
+            insert_profile_sql,
+            (
+                user_id,
                 user_login_info.get('age'),
                 user_login_info.get('gender'),
                 user_login_info.get('height_in'),
                 user_login_info.get('weight_lb')
             )
         )
-        user = cur.fetchone()
-        user_id = int(user[0])
-        cur.execute( 'INSERT INTO leaderboard (user_id) VALUES (%s);',
-        (user_id,)) #all other aspects of the leaderboard are defaulted to 0
+        insert_leaderboard_sql = load_sql_query('insert_leaderboard.sql')
+        cur.execute(
+            insert_leaderboard_sql, 
+            (user_id,)
+             # all other aspects of the leaderboard are defaulted to 0
+        )
         conn.commit()
+        
         token = jwt.encode(
             {
             'user_id': user_id,
@@ -149,21 +156,12 @@ def register():
             'success': True,
             'message': 'Registration successful',
             'user': {
-                # 'id': user[0],
-                # 'username': user[1],
-                # 'email': user[2],
-                # 'age': user[3],
-                # 'gender': user[4],
-                # 'height_in': user[5],
-                # 'weight_lb': user[6],
-                # 'created_at': str(user[7])
-                'id': user[0],
-                'email': user[1],
-                'age': user[3],
-                'gender': user[4],
-                'height_in': user[5],
-                'weight_lb': user[6],
-                'created_at': str(user[7])
+                'id': user_id,
+                'email': user_login_info['email'],
+                'age': user_login_info.get('age'),
+                'gender': user_login_info.get('gender'),
+                'height_in': user_login_info.get('height_in'),
+                'weight_lb': user_login_info.get('weight_lb'),
             },
             'token': token
         }), 201
@@ -206,21 +204,15 @@ def register():
 def update_user(user_id):
     conn = None
     cur = None
-
     try:
         data = request.get_json()
         conn = get_db_connection()
         cur = conn.cursor()
 
+        # update profile
+        update_profile_sql = load_sql_query('update_profile.sql')
         cur.execute(
-            '''UPDATE users 
-               SET age = COALESCE(%s, age),
-                   gender = COALESCE(%s, gender),
-                   height_in = COALESCE(%s, height_in),
-                   weight_lb = COALESCE(%s, weight_lb),
-                   updated_at = NOW()
-               WHERE id = %s
-               RETURNING id, email, age, gender, height_in, weight_lb, updated_at;''',
+            update_profile_sql,
             (
                 data.get('age'),
                 data.get('gender'),
@@ -229,6 +221,12 @@ def update_user(user_id):
                 user_id
             )
         )
+        
+        # set update_at
+        cur.execute("UPDATE users SET updated_at = NOW() WHERE id = %s;", (user_id,))
+
+        select_updated_user_sql = load_sql_query('select_updated_user.sql')
+        cur.execute(select_updated_user_sql, (user_id,))
 
         user = cur.fetchone()
         conn.commit()
@@ -243,21 +241,13 @@ def update_user(user_id):
             'success': True,
             'message': 'Profile updated successfully',
             'user': {
-                # 'id': user[0],
-                # 'username': user[1],
-                # 'email': user[2],
-                # 'age': user[3],
-                # 'gender': user[4],
-                # 'height_in': user[5],
-                # 'weight_lb': user[6],
-                # 'updated_at': str(user[7])
                 'id': user[0],
                 'email': user[1],
-                'age': user[3],
-                'gender': user[4],
-                'height_in': user[5],
-                'weight_lb': user[6],
-                'updated_at': str(user[8])
+                'age': user[2],
+                'gender': user[3],
+                'height_in': user[4],
+                'weight_lb': user[5],
+                'updated_at': str(user[6])
             }
         }), 200
 
@@ -378,21 +368,19 @@ def login():
             }), 400
         conn = get_db_connection()
         cur = conn.cursor()
-        # Get user from database
+        # get user from database
+        sql_query = load_sql_query('select_user_for_login.sql')
         cur.execute(
-            '''SELECT id, email, password_hash, age, gender, 
-                      height_in, weight_lb, created_at 
-               FROM users 
-               WHERE email = %s;''',
+            sql_query, 
             (email,)
         )
         user = cur.fetchone()
         # check if exists
         if not user:
             return jsonify({
-                'success': False,
+                'success': False, 
                 'error': 'Invalid email or password'
-            }), 401
+                }), 401
         user_id = user[0]
         password_hash = user[2]
         if not user:
@@ -400,8 +388,7 @@ def login():
                 'success': False,
                 'error': 'Invalid email or password'
             }), 401
-        # Verify password with bcrypt
-        # if not bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8')):
+        # verify password with bcrypt
         if not bcrypt.checkpw(
             password.encode('utf-8'), 
             password_hash if isinstance(password_hash, bytes) else password_hash.encode('utf-8')
@@ -410,7 +397,7 @@ def login():
                 'success': False,
                 'error': 'Invalid email or password'
             }), 401
-        # Create JWT token (expires in 7 days)
+        # create JWT token (expires in 7 days)
         token = jwt.encode(
             {
                 'user_id': user_id,
@@ -421,21 +408,13 @@ def login():
         )
         # Remove password_hash from response
         user_data = {
-            # 'id': user[0],
-            # 'username': user[1],
-            # 'email': user[2],
-            # 'age': user[4],
-            # 'gender': user[5],
-            # 'height_in': user[6],
-            # 'weight_lb': user[7],
-            # 'created_at': str(user[8])
             'id': user[0],
             'email': user[1],
-            'age': user[3],
-            'gender': user[4],
-            'height_in': user[5],
-            'weight_lb': user[6],
-            'created_at': str(user[7])
+            'age': user[4],
+            'gender': user[5],
+            'height_in': user[6],
+            'weight_lb': user[7],
+            'created_at': str(user[3])
         }
 
         return jsonify({
