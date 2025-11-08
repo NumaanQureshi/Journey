@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Color(0xFFFBBF18),
           ),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.black,
         leading: Builder(
           builder: (context) => IconButton(
             color: Colors.blue,
@@ -56,16 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      extendBodyBehindAppBar: true,
+      backgroundColor: const Color.fromARGB(255, 37, 37, 37),
+      // extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // const VideoBackground(asset: 'assets/images/animated_bg.mp4'),
-          SizedBox.expand(
-            child: Image.asset(
-              'assets/images/home_bg.png',
-              fit: BoxFit.cover,
-            ),
-          ),
           Center(
             child: SizedBox(
               width: double.infinity,
