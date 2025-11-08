@@ -50,7 +50,6 @@ class Challenges extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const SideMenu(currentScreen: 'Challenges'),
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.blue),
         title: Text(
@@ -60,17 +59,12 @@ class Challenges extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.black,
         elevation: 0,
       ),
+      backgroundColor: const Color.fromARGB(255, 37, 37, 37),
       body: Stack(
         children: [
-          SizedBox.expand(
-            child: Image.asset(
-              'assets/images/home_bg.png',
-              fit: BoxFit.cover,
-            ),
-          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
