@@ -4,10 +4,18 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthService {
-    // local - use IPv4
-    // android - 10.0.2.2
-    // ios - localhost
-  final String _baseUrl = 'http://192.168.1.154:5000';
+  String get _baseUrl {
+    if (kIsWeb) {
+      // chrome
+      return 'http://127.0.0.1:5000/api/auth';
+    } 
+    else if (defaultTargetPlatform == TargetPlatform.android) {
+      // android
+      return 'http://10.0.2.2:5000/api/auth';
+    }
+    // iOS + all other platforms
+    return 'http://localhost:5000/api/auth';
+  }
   final _storage = const FlutterSecureStorage();
 
   Future<bool> signUp(String email, String password) async {
@@ -26,11 +34,9 @@ class AuthService {
       if (response.statusCode == 201 || response.statusCode == 200) {
         return true;
       } else {
-        debugPrint('Sign up failed: ${response.body}');
         return false;
       }
     } catch (e) {
-      debugPrint('Error during sign up: $e');
       return false;
     }
   }
@@ -49,13 +55,18 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        String token = jsonDecode(response.body)['access_token'];
-        await _storage.write(key: 'auth_token', value: token);
-        return true;
+        final responseBody = jsonDecode(response.body);
+        if (responseBody is Map<String, dynamic> && responseBody.containsKey('token')) {
+          final token = responseBody['token'] as String?;
+          if (token != null) {
+            await _storage.write(key: 'auth_token', value: token);
+            return true;
+          }
+        }
+        return false;
       }
       return false;
     } catch (e) {
-      debugPrint('Error during login: $e');
       return false;
     }
   }
