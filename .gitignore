@@ -1,7 +1,8 @@
-# environment files
-.vscode/
-.venv/
+# .env file
 .env
+
+# .venv file
+.venv/
 
 # Flutter files
 .dart_tool
