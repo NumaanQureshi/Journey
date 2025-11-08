@@ -3,11 +3,12 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
-from flask_cors import CORS     # CORS needed to test app locally
+from flask_cors import CORS     # CORS import needed to test app locally
 import bcrypt
 import jwt                      # Encode / Decode
 import datetime
 from functools import wraps
+from sql_loader import load_sql_query
 
 
 load_dotenv()
@@ -40,7 +41,6 @@ def token_required(f):
 
     return decorated
 
-# DB connection
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL)
     return conn
@@ -62,14 +62,16 @@ def test_db():
         return jsonify({"success": True, "database": db_version[0]})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-    
 # GET all users
 @app.route('/api/users', methods=['GET'])
-def get_users():
+def get_all_users():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT id, email, age, gender, height_in, weight_lb, created_at FROM users;')
+        
+        sql_query = load_sql_query('select_all_users.sql')        
+        cur.execute(sql_query)
+        
         users = cur.fetchall()
         cur.close()
         conn.close()
@@ -83,7 +85,8 @@ def get_user(user_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT id, email, age, gender, height_in, weight_lb, created_at FROM users WHERE id = %s;', (user_id,))        
+        sql_query = load_sql_query('select_user_by_id.sql')
+        cur.execute(sql_query, (user_id,))        
         user = cur.fetchone()
         cur.close()
         conn.close()
@@ -94,7 +97,7 @@ def get_user(user_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-# CREATE new user (sign up)
+# CREATE new user
 @app.route('/api/auth/register', methods=['POST'])
 def register():
     conn = None
@@ -106,7 +109,7 @@ def register():
         if not user_login_info.get('password'):
             return jsonify({'success': False, 'error': 'Password is required'}), 400
         password = user_login_info['password']
-        if len(password) < 8: # For security purposes, we want a secure password that's at least 8 characters long
+        if len(password) < 8: #For security purposes, we want a secure password that's at least 8 characters long
             return jsonify({
                 'success': False,
                 'error': 'Password must be at least 8 characters long'
@@ -114,24 +117,33 @@ def register():
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO users (email, password_hash, age, gender, height_in, weight_lb) 
-            VALUES (%s, %s, %s, %s, %s, %s) 
-            RETURNING id, email, age, gender, height_in, weight_lb, created_at""",
+        insert_user_sql = load_sql_query('insert_user_core.sql')
+        cur.execute(insert_user_sql,
             (
                 user_login_info['email'],
                 password_hash,
+            )
+        )
+        user_id = cur.fetchone()[0]
+        insert_profile_sql = load_sql_query('insert_profile.sql')
+        cur.execute(
+            insert_profile_sql,
+            (
+                user_id,
                 user_login_info.get('age'),
                 user_login_info.get('gender'),
                 user_login_info.get('height_in'),
                 user_login_info.get('weight_lb')
             )
         )
-        user = cur.fetchone()
-        user_id = int(user[0])
-        cur.execute( 'INSERT INTO leaderboard (user_id) VALUES (%s);',
-        (user_id,)) #all other aspects of the leaderboard are defaulted to 0
+        insert_leaderboard_sql = load_sql_query('insert_leaderboard.sql')
+        cur.execute(
+            insert_leaderboard_sql, 
+            (user_id,)
+             # all other aspects of the leaderboard are defaulted to 0
+        )
         conn.commit()
+        
         token = jwt.encode(
             {
             'user_id': user_id,
@@ -144,13 +156,12 @@ def register():
             'success': True,
             'message': 'Registration successful',
             'user': {
-                'id': user[0],
-                'email': user[1],
-                'age': user[3],
-                'gender': user[4],
-                'height_in': user[5],
-                'weight_lb': user[6],
-                'created_at': str(user[7])
+                'id': user_id,
+                'email': user_login_info['email'],
+                'age': user_login_info.get('age'),
+                'gender': user_login_info.get('gender'),
+                'height_in': user_login_info.get('height_in'),
+                'weight_lb': user_login_info.get('weight_lb'),
             },
             'token': token
         }), 201
@@ -158,6 +169,11 @@ def register():
         if conn:
             conn.rollback()
         error_msg = str(e)
+        # if 'username' in error_msg:
+        #     return jsonify({
+        #         'success': False,
+        #         'error': 'Username already exists'
+        #     }), 400
         if 'email' in error_msg:
             return jsonify({
                 'success': False,
@@ -182,27 +198,21 @@ def register():
         if conn:
             conn.close()
 
-# UPDATING User Profile 
+
 @app.route('/api/auth/me', methods=['PUT'])
 @token_required
 def update_user(user_id):
     conn = None
     cur = None
-
     try:
         data = request.get_json()
         conn = get_db_connection()
         cur = conn.cursor()
 
+        # update profile
+        update_profile_sql = load_sql_query('update_profile.sql')
         cur.execute(
-            '''UPDATE users 
-               SET age = COALESCE(%s, age),
-                   gender = COALESCE(%s, gender),
-                   height_in = COALESCE(%s, height_in),
-                   weight_lb = COALESCE(%s, weight_lb),
-                   updated_at = NOW()
-               WHERE id = %s
-               RETURNING id, email, age, gender, height_in, weight_lb, updated_at;''',
+            update_profile_sql,
             (
                 data.get('age'),
                 data.get('gender'),
@@ -211,6 +221,12 @@ def update_user(user_id):
                 user_id
             )
         )
+        
+        # set update_at
+        cur.execute("UPDATE users SET updated_at = NOW() WHERE id = %s;", (user_id,))
+
+        select_updated_user_sql = load_sql_query('select_updated_user.sql')
+        cur.execute(select_updated_user_sql, (user_id,))
 
         user = cur.fetchone()
         conn.commit()
@@ -227,11 +243,11 @@ def update_user(user_id):
             'user': {
                 'id': user[0],
                 'email': user[1],
-                'age': user[3],
-                'gender': user[4],
-                'height_in': user[5],
-                'weight_lb': user[6],
-                'updated_at': str(user[8])
+                'age': user[2],
+                'gender': user[3],
+                'height_in': user[4],
+                'weight_lb': user[5],
+                'updated_at': str(user[6])
             }
         }), 200
 
@@ -249,7 +265,7 @@ def update_user(user_id):
         if conn:
             conn.close()
 
-# UPDATING User password
+
 @app.route('/api/auth/me/password', methods=['PUT'])
 @token_required
 def update_password(user_id):
@@ -335,7 +351,6 @@ def update_password(user_id):
         if conn:
             conn.close()
 
-# LOGIN
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     conn = None
@@ -353,21 +368,19 @@ def login():
             }), 400
         conn = get_db_connection()
         cur = conn.cursor()
-        # Get user from database
+        # get user from database
+        sql_query = load_sql_query('select_user_for_login.sql')
         cur.execute(
-            '''SELECT id, email, password_hash, age, gender, 
-                      height_in, weight_lb, created_at 
-               FROM users 
-               WHERE email = %s;''',
+            sql_query, 
             (email,)
         )
         user = cur.fetchone()
         # check if exists
         if not user:
             return jsonify({
-                'success': False,
+                'success': False, 
                 'error': 'Invalid email or password'
-            }), 401
+                }), 401
         user_id = user[0]
         password_hash = user[2]
         if not user:
@@ -375,7 +388,7 @@ def login():
                 'success': False,
                 'error': 'Invalid email or password'
             }), 401
-        # password verification with bcrypt
+        # verify password with bcrypt
         if not bcrypt.checkpw(
             password.encode('utf-8'), 
             password_hash if isinstance(password_hash, bytes) else password_hash.encode('utf-8')
@@ -384,7 +397,7 @@ def login():
                 'success': False,
                 'error': 'Invalid email or password'
             }), 401
-        # Create JWT token (expires in 7 days)
+        # create JWT token (expires in 7 days)
         token = jwt.encode(
             {
                 'user_id': user_id,
@@ -397,11 +410,11 @@ def login():
         user_data = {
             'id': user[0],
             'email': user[1],
-            'age': user[3],
-            'gender': user[4],
-            'height_in': user[5],
-            'weight_lb': user[6],
-            'created_at': str(user[7])
+            'age': user[4],
+            'gender': user[5],
+            'height_in': user[6],
+            'weight_lb': user[7],
+            'created_at': str(user[3])
         }
 
         return jsonify({
@@ -426,7 +439,6 @@ def login():
             cur.close()
         if conn:
             conn.close()
-
 # DELETE user
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
