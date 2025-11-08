@@ -58,14 +58,15 @@ class _WorkoutState extends State<Workout> {
           ),
         ],
       ),
+      backgroundColor: const Color.fromARGB(255, 37, 37, 37),
       body: Stack(
         children: [
-          SizedBox.expand(
-            child: Image.asset(
-              'assets/images/workout_bg.png',
-              fit: BoxFit.cover,
-            ),
-          ),
+          // SizedBox.expand(
+          //   child: Image.asset(
+          //     'assets/images/workout_bg.png',
+          //     fit: BoxFit.cover,
+          //   ),
+          // ),
         ],
       ),
       bottomNavigationBar: NavigationBarTheme(
