@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:journey_application/screens/login.dart';
-import 'home_screen.dart';
+import 'personalization_screen.dart';
 import '../authentication/authentication.dart';
 
 class SignUp extends StatefulWidget {
@@ -63,7 +63,7 @@ class _SignUpState extends State<SignUp> {
         );
         Navigator.pushReplacement(
           context,
-          _createSlideRoute(const HomeScreen()),
+          _createSlideRoute(const PersonalizationScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
