@@ -1,5 +1,6 @@
 # .env file
 .env
+.DS_STORE
 
 # .venv file
 .venv/
