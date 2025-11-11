@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'sign_up.dart';
 import '../authentication/authentication.dart';
+import '../featureflags/feature_flags.dart';
 
 
 class Login extends StatefulWidget {
@@ -33,6 +34,21 @@ class _LoginState extends State<Login> {
       },
     );
   }
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAndBypassAuthentication();
+  }
+
+  void _checkAndBypassAuthentication() {
+    if (kSkipAuthentication) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacement(context, _createSlideRoute(const HomeScreen()));
+      });
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
