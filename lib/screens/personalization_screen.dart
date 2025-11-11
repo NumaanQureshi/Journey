@@ -8,9 +8,16 @@ class PersonalizationScreen extends StatefulWidget {
   State<PersonalizationScreen> createState() => _PersonalizationScreenState();
 }
 
+enum UnitSystem { metric, imperial }
+
 class _PersonalizationScreenState extends State<PersonalizationScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+
+  UnitSystem _selectedUnitSystem = UnitSystem.metric;
 
   final List<String> _promptTitles = [
     'Personal Info',
@@ -18,10 +25,12 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     'Planning',
   ];
 
-  // Dispose of info after done with it.
+  // dispose info after done.
   @override
   void dispose() {
     _pageController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
   // TODO: @@TAWHIDUL - Title of the Section goes first, then you can return a Widget that will build text boxes.
@@ -74,8 +83,56 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
               ),
               _buildStep(
                 title: 'Step 2: Health Info', 
-                child: const Text('ADD FIELDS FOR HEALTH INFO (Height, Weight)', 
-                style: TextStyle(color: Colors.white70))
+                child: Column(
+                  children: [
+                    SegmentedButton<UnitSystem>(
+                      segments: const <ButtonSegment<UnitSystem>>[
+                        ButtonSegment<UnitSystem>(
+                            value: UnitSystem.metric,
+                            label: Text('Metric (cm / kg)')),
+                        ButtonSegment<UnitSystem>(
+                            value: UnitSystem.imperial,
+                            label: Text('Imperial (in / lb)')),
+                      ],
+                      selected: <UnitSystem>{_selectedUnitSystem},
+                      onSelectionChanged: (Set<UnitSystem> newSelection) {
+                        setState(() {
+                          _selectedUnitSystem = newSelection.first;
+                        });
+                      },
+                      style: SegmentedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade800,
+                        foregroundColor: Colors.white,
+                        selectedForegroundColor: Colors.white,
+                        selectedBackgroundColor: Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _heightController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: _selectedUnitSystem == UnitSystem.metric ? 'Height (cm)' : 'Height (in)',
+                        labelStyle: TextStyle(color: Colors.white70),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _weightController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: _selectedUnitSystem == UnitSystem.metric ? 'Weight (kg)' : 'Weight (lb)',
+                        labelStyle: TextStyle(color: Colors.white70),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
               ),
               _buildStep(
                 title: 'Step 3: Planning', 
@@ -99,7 +156,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                     child: const Text('Back', style: TextStyle(color: Colors.white)),
                   )
                 else
-                  const SizedBox(), // Keep spacing consistent
+                  const SizedBox(), // consistent spacing
                 ElevatedButton(
                   onPressed: () {
                     if (_currentPage < _promptTitles.length - 1) {
