@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
 import 'login.dart';
-=======
-import 'package:journey_application/screens/login.dart';
->>>>>>> origin/frontend
 import 'personalization_screen.dart';
 import '../authentication/authentication.dart';
 
@@ -234,8 +230,4 @@ class _SignUpState extends State<SignUp> {
       ),
     );
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/frontend

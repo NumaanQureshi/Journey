@@ -203,8 +203,4 @@ class _LoginState extends State<Login> {
       ),
     );
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/frontend

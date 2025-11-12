@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
 import 'screens/sign_up.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -34,24 +33,6 @@ class JourneyApp extends StatelessWidget {
         '/challenges': (context) => const Challenges(),
         '/workout': (context) => const Workout(),
       },
-=======
-import 'screens/login_screen.dart';
-
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const Journey());
-}
-
-class Journey extends StatelessWidget {
-  const Journey({super.key});
-
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      home: const LoginScreen(),
->>>>>>> origin/frontend
     );
   }
 }

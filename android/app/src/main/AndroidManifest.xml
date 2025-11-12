@@ -1,15 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-<<<<<<< HEAD
         android:label="journey"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-=======
-        android:label="journey_application"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
->>>>>>> origin/frontend
         <activity
             android:name=".MainActivity"
             android:exported="true"

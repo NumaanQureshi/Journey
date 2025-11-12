@@ -126,8 +126,4 @@ class _FriendState extends State<Friend> {
       ),
     );
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/frontend

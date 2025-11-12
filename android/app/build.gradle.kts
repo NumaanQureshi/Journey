@@ -6,11 +6,7 @@ plugins {
 }
 
 android {
-<<<<<<< HEAD
     namespace = "com.example.journey"
-=======
-    namespace = "com.example.journey_application"
->>>>>>> origin/frontend
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -25,11 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-<<<<<<< HEAD
         applicationId = "com.example.journey"
-=======
-        applicationId = "com.example.journey_application"
->>>>>>> origin/frontend
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
