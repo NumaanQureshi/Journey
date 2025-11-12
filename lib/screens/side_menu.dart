@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'challenges_screen.dart';
 import 'home_screen.dart';
 import 'workout_screen.dart';
 import 'settings_screen.dart';
+=======
+import 'package:journey_application/screens/challenges_screen.dart';
+import 'package:journey_application/screens/home_screen.dart';
+import 'package:journey_application/screens/workout_screen.dart';
+import 'package:journey_application/screens/settings_screen.dart';
+>>>>>>> origin/frontend
 
 class SideMenu extends StatelessWidget {
   final String? currentScreen;
@@ -155,4 +162,8 @@ class SideMenu extends StatelessWidget {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/frontend

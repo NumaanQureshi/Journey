@@ -1,7 +1,12 @@
+<<<<<<< HEAD
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'home_screen.dart';
+=======
+import 'package:flutter/material.dart';
+import 'package:journey_application/screens/home_screen.dart';
+>>>>>>> origin/frontend
 
 class PersonalizationScreen extends StatefulWidget {
   const PersonalizationScreen({super.key});
@@ -14,6 +19,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+<<<<<<< HEAD
   // Controllers for text input fields
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
@@ -29,12 +35,15 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   final _healthInfoFormKey = GlobalKey<FormState>();
   final _planningFormKey = GlobalKey<FormState>();
 
+=======
+>>>>>>> origin/frontend
   final List<String> _promptTitles = [
     'Personal Info',
     'Health Info',
     'Planning',
   ];
 
+<<<<<<< HEAD
   // Dispose of controllers and page controller after done with them.
   @override
   void dispose() {
@@ -200,11 +209,32 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
               return null;
             },
           ),
+=======
+  // Dispose of info after done with it.
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+  // TODO: @@TAWHIDUL - Title of the Section goes first, then you can return a Widget that will build text boxes.
+
+  // For example, Widget _buildStep(title: 'Step 1: Personal Info', child: const Text('Fields for personal info go here.', style: TextStyle(color: Colors.white70)))
+  Widget _buildStep({required String title, required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 20),
+          child,
+>>>>>>> origin/frontend
         ],
       ),
     );
   }
 
+<<<<<<< HEAD
   // Method to handle validation and move to next page
   void _goToNextPage() {
     bool canProceed = false;
@@ -238,6 +268,8 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     }
   }
 
+=======
+>>>>>>> origin/frontend
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -250,15 +282,21 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
+<<<<<<< HEAD
           // Background image
+=======
+>>>>>>> origin/frontend
           SizedBox.expand(
             child: Image.asset(
               'assets/images/blur_bg.png',
               fit: BoxFit.cover,
             ),
           ),
+<<<<<<< HEAD
 
           // PageView for multi-step personalization
+=======
+>>>>>>> origin/frontend
           PageView(
             controller: _pageController,
             onPageChanged: (index) {
@@ -267,6 +305,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
               });
             },
             children: [
+<<<<<<< HEAD
               // Step 1: Personal Info
               _buildStep(
                 title: 'Step 1: Personal Info',
@@ -302,6 +341,25 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           ),
 
           // Navigation buttons
+=======
+              _buildStep(
+                title: 'Step 1: Personal Info', 
+                child: const Text('ADD FIELDS FOR PERSONAL INFO (Name, Profile Picture, DOB, Gender)', 
+                style: TextStyle(color: Colors.white70))
+              ),
+              _buildStep(
+                title: 'Step 2: Health Info', 
+                child: const Text('ADD FIELDS FOR HEALTH INFO (Height, Weight)', 
+                style: TextStyle(color: Colors.white70))
+              ),
+              _buildStep(
+                title: 'Step 3: Planning', 
+                child: const Text('ADD FIELDS FOR PLANNING INFO (Main Focus, Goal Weight, Desired Activity Intensity)', 
+                style: TextStyle(color: Colors.white70))
+              ),
+            ],
+          ),
+>>>>>>> origin/frontend
           Positioned(
             bottom: 50,
             left: 24,
@@ -312,18 +370,39 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                 if (_currentPage > 0)
                   TextButton(
                     onPressed: () {
+<<<<<<< HEAD
                       _pageController.previousPage(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.ease);
+=======
+                      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.ease);
+>>>>>>> origin/frontend
                     },
                     child: const Text('Back', style: TextStyle(color: Colors.white)),
                   )
                 else
+<<<<<<< HEAD
                   const SizedBox(),
                 ElevatedButton(
                   onPressed: _goToNextPage, // Updated button to use validation
                   child: Text(
                       _currentPage < _promptTitles.length - 1 ? 'Next' : 'Finish'),
+=======
+                  const SizedBox(), // Keep spacing consistent
+                ElevatedButton(
+                  onPressed: () {
+                    if (_currentPage < _promptTitles.length - 1) {
+                      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.ease);
+                    } else {
+                      // if personalization done, go to Home.
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      );
+                    }
+                  },
+                  child: Text(_currentPage < _promptTitles.length - 1 ? 'Next' : 'Finish'),
+>>>>>>> origin/frontend
                 ),
               ],
             ),
@@ -332,4 +411,8 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/frontend

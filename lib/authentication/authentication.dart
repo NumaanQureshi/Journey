@@ -70,4 +70,8 @@ class AuthService {
       return false;
     }
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/frontend

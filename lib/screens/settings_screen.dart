@@ -93,4 +93,8 @@ class SettingsScreen extends StatelessWidget {
       onTap: onTap,
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/frontend

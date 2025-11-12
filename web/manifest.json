@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
     "name": "journey",
     "short_name": "journey",
+=======
+    "name": "journey_application",
+    "short_name": "journey_application",
+>>>>>>> origin/frontend
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

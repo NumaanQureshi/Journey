@@ -95,4 +95,8 @@ class Profile extends StatelessWidget {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/frontend

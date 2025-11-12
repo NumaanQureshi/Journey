@@ -7,12 +7,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/frontend
 import 'package:journey_application/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
+<<<<<<< HEAD
     await tester.pumpWidget(JourneyApp());
+=======
+    await tester.pumpWidget(const Journey());
+>>>>>>> origin/frontend
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
@@ -26,4 +34,8 @@ void main() {
     expect(find.text('0'), findsNothing);
     expect(find.text('1'), findsOneWidget);
   });
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/frontend
