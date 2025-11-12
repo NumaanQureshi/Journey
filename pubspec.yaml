@@ -1,0 +1,64 @@
+name: journey_application
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+# Dependencies specify other packages that your package needs in order to work.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  google_sign_in: ^7.2.0
+  video_player: ^2.6.1
+  supabase_flutter: ^2.10.3
+  google_fonts: ^6.3.2
+  provider: ^6.0.5
+  shared_preferences: ^2.0.15
+  path_provider: ^2.1.1
+  share_plus: ^7.2.1
+  image_picker: ^1.0.4
+  fl_chart: ^0.64.0
+  http: ^1.1.0
+  flutter_secure_storage: ^9.2.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  fonts:
+    - family: OCR A Extended
+      fonts:
+        - asset: assets/fonts/OCR A Extended Regular.ttf
+    - family: Itim
+      fonts:
+        - asset: assets/fonts/Itim-Regular.ttf
+
+  assets:
+    - assets/images/your_week.png
+    - assets/images/drawer_bg.png
+    - assets/images/google_logo.png
+    - assets/images/static_gradient_bg.png
+    - assets/images/login_bg.png
+    - assets/images/blur_bg.png
+    - assets/images/home_bg.png
+    - assets/images/profile_bg.png
+    - assets/images/workout_bg.png
