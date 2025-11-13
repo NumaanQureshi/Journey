@@ -3,7 +3,7 @@
 /// Controls whether the app bypasses the login flow and mocks authentication.
 /// 
 /// ⚠️ IMPORTANT: Must be set to `false` for production/release builds.
-const bool kSkipAuthentication = true; // Set this to false before releasing!
+const bool kSkipAuthentication = false; // Set this to false before releasing!
 
 /// The ID of the test user to assume when kSkipAuthentication is true.
 /// This ID must match the 'DEBUG_USER_ID=5' set in your Flask backend's .env file.
