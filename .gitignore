@@ -1,8 +1,7 @@
-# .env file
+# local files
 .env
-
-# .venv file
 .venv/
+__pycache__/
 
 # Flutter files
 .dart_tool
