@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, current_app
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -8,19 +8,40 @@ import bcrypt
 import jwt                      # Encode / Decode
 import datetime
 from functools import wraps
+from helper_functions import calculate_age
 from sql_loader import load_sql_query
 
 
 load_dotenv()
 app = Flask(__name__) # creates a Flask application
 
-CORS(app) # -- USED ONLY FOR LOCAL TESTING -- 
+CORS(app, resources={r"/api/*": {"origins": "*"}}) # -- USED ONLY FOR LOCAL TESTING -- 
 
 DATABASE_URL= os.getenv("DATABASE_URL")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+app.config['SKIP_AUTH_DEBUG'] = os.getenv('SKIP_AUTH_DEBUG', 'False').lower() in ('true', '1', 't')
+app.config['DEBUG_USER_ID'] = os.getenv('DEBUG_USER_ID', None)
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        
+        # FEATURE FLAG -> Allows us to skip auth when testing frontend
+        # DEFAULT DEBUG USERID = 5, EMAIL: debug@example.com
+        if app.config.get('SKIP_AUTH_DEBUG'):
+            debug_user_id = app.config.get('DEBUG_USER_ID')
+            if debug_user_id is None:
+                # error if no env variable is set
+                print("ERROR: AUTH BYPASS ON BUT DEBUG_USER_ID NOT SET")
+                return jsonify({'success': False, 'error': 'set DEBUG_USER_ID in .env'}), 500
+            print(f"DEBUG MODE: AUTH BYPASSED for User ID: {debug_user_id}")
+            try:
+                user_id = int(debug_user_id)
+                return f(user_id, *args, **kwargs) # returns debug user
+            # ensure debug user is int = 5
+            except ValueError:
+                return jsonify({'success': False, 'error': 'DEBUG_USER_ID must be an integer'}), 500
+
         token = None
         # Extract token from header
         if 'Authorization' in request.headers:
@@ -169,11 +190,6 @@ def register():
         if conn:
             conn.rollback()
         error_msg = str(e)
-        # if 'username' in error_msg:
-        #     return jsonify({
-        #         'success': False,
-        #         'error': 'Username already exists'
-        #     }), 400
         if 'email' in error_msg:
             return jsonify({
                 'success': False,
@@ -205,20 +221,93 @@ def update_user(user_id):
     conn = None
     cur = None
     try:
-        data = request.get_json()
+        data = request.form # <--- CHANGE 1: Use request.form for text data
+        
+        # profile picture
+        # profile_picture_file = request.files.get('profile_picture') # <-- Access file
+        
+        # TODO: logic to save profile pic to db
+        
         conn = get_db_connection()
         cur = conn.cursor()
+
+        # name
+        user_name = data.get('name')
+
+        # age
+        dob_iso = data.get('dob') # <-- Client sends 'dob'
+        
+        calculated_age = None
+        if dob_iso:
+            try:
+                dob_date = datetime.datetime.fromisoformat(dob_iso.replace('Z', '+00:00'))
+                birth_year = dob_date.year
+                birth_month = dob_date.month
+                birth_day = dob_date.day
+                calculated_age = calculate_age(birth_year, birth_month, birth_day)
+            except Exception as e:
+                current_app.logger.error(f"DOB parsing failed: {e}")
+                
+        # gender
+        gender = data.get('gender')
+        
+        # exercise focus
+        main_focus = data.get('main_focus')
+
+        # intensity
+        activity_intensity = data.get('activity_intensity')
+
+        # 1d. Height and Weight Conversion (to Imperial)
+        unit_system = data.get('unit_system', 'imperial') # Default to imperial for existing fields
+        
+        # height
+        height_raw = data.get('height')
+        height_in = None
+        if height_raw is not None:
+            height_float = float(height_raw)
+            if unit_system == 'metric':
+                # convert to inches: 1 cm = 0.393701 in
+                height_in = height_float * 0.393701
+            else: # imperial
+                height_in = height_float
+
+        # weight
+        weight_raw = data.get('weight')
+        weight_lb = None
+        if weight_raw is not None:
+            weight_float = float(weight_raw)
+            if unit_system == 'metric':
+                # convert to pounds: 1 kg = 2.20462 lb
+                weight_lb = weight_float * 2.20462
+            else: # imperial
+                weight_lb = weight_float
+        
+        # goal weight
+        goal_weight_raw = data.get('goal_weight')
+        goal_weight_lb = None
+        if goal_weight_raw is not None:
+            goal_weight_float = float(goal_weight_raw)
+            if unit_system == 'metric':
+                # Convert to pounds: 1 kg = 2.20462 lb
+                goal_weight_lb = goal_weight_float * 2.20462
+            else: # imperial
+                goal_weight_lb = goal_weight_float
 
         # update profile
         update_profile_sql = load_sql_query('update_profile.sql')
         cur.execute(
             update_profile_sql,
             (
-                data.get('age'),
-                data.get('gender'),
-                data.get('height_in'),
-                data.get('weight_lb'),
+                user_name,
+                calculated_age,
+                gender,
+                height_in,
+                weight_lb,
+                goal_weight_lb,
+                main_focus,
+                activity_intensity,
                 user_id
+                # TODO: add profile pic
             )
         )
         
@@ -247,13 +336,19 @@ def update_user(user_id):
                 'gender': user[3],
                 'height_in': user[4],
                 'weight_lb': user[5],
-                'updated_at': str(user[6])
+                'updated_at': str(user[6]),
+                'name': user[7] if len(user) > 7 else None,
+                'goal_weight_lb': user[8] if len(user) > 8 else None,
+                'main_focus': user[9] if len(user) > 9 else None,
+                'activity_intensity': user[10] if len(user) > 10 else None,
             }
         }), 200
 
     except Exception as e:
         if conn:
             conn.rollback()
+        import traceback
+        traceback.print_exc() 
         return jsonify({
             'success': False,
             'error': str(e)
