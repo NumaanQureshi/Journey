@@ -1,7 +1,12 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'home_screen.dart';
+import '../featureflags/feature_flags.dart';
+import '../authentication/authentication.dart';
+import 'package:flutter/foundation.dart';
 
 class PersonalizationScreen extends StatefulWidget {
   const PersonalizationScreen({super.key});
@@ -16,6 +21,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  final AuthService _authService = AuthService();
   // Controllers for text input fields
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
@@ -49,6 +55,19 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     'Planning',
   ];
 
+  String get _baseUrl {
+    const String path = '/api/auth/me';
+    if (kIsWeb) {
+      // For web browsers
+      return 'http://127.0.0.1:5000$path';
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
+      // For Android emulators
+      return 'http://10.0.2.2:5000$path';
+    }
+    // For iOS simulators and other platforms
+    return 'http://localhost:5000$path';
+  }
+
   // dispose info after done.
   @override
   void dispose() {
@@ -71,6 +90,96 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     }
   }
 
+  Future<void> _submitProfile() async {
+    // Show a loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Updating profile...')),
+    );
+
+    // 1. Construct the request
+    final request = http.MultipartRequest('PUT', Uri.parse(_baseUrl));
+
+    // 2. Add headers (including authentication)
+    String? token;
+    if (kSkipAuthentication) {
+      token = kDebugAuthToken;
+    } else {
+      token = await _authService.getToken();
+    }
+
+    if (token == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Authentication error. Please log in again.')),
+      );
+      return; // Stop the submission
+    }
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Content-Type'] = 'multipart/form-data';
+
+    // // 3. Add the image file if one was selected
+    // if (_profileImage != null) {
+    //   request.files.add(
+    //     await http.MultipartFile.fromPath(
+    //       'profile_picture', // This key must match what your backend expects
+    //       _profileImage!.path,
+    //     ),
+    //   );
+    // }
+
+    // 4. Add the text fields
+    final dob = DateTime(_selectedBirthYear!, _selectedBirthMonth!, _selectedBirthDay!).toIso8601String();
+
+    request.fields['name'] = _nameController.text;
+    request.fields['dob'] = dob;
+    request.fields['gender'] = _selectedGender!;
+    request.fields['unit_system'] = _selectedUnitSystem.name; // 'metric' or 'imperial'
+    request.fields['height'] = _heightController.text;
+    request.fields['weight'] = _weightController.text;
+    request.fields['goal_weight'] = _goalWeightController.text;
+    request.fields['main_focus'] = _mainFocus!;
+    request.fields['activity_intensity'] = _activityIntensity!;
+
+    try {
+      // 5. Send the request
+      final streamedResponse = await request.send();
+
+      // 6. Get the response
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (!mounted) return;
+
+      // Hide the "Updating..." snackbar
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      // 7. Handle the response
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully!')),
+        );
+        // Navigate to the home screen on success
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        // Show an error message
+        final responseBody = json.decode(response.body);
+        final errorMessage = responseBody['message'] ?? 'Failed to update profile.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${response.statusCode}. $errorMessage')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: $e')),
+      );
+    }
+  }
   // Reusable step builder
   Widget _buildStep({required String title, required Widget child}) {
     return Padding(
@@ -550,11 +659,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           curve: Curves.ease,
         );
       } else {
-        // When finished, go to Home Screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        _submitProfile();
       }
     } else {
       // Optional: scroll to top to show errors
