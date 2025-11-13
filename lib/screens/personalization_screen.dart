@@ -18,7 +18,9 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
 
   // Controllers for text input fields
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _dobController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _goalWeightController = TextEditingController();
 
   // For gender selection
   String? _selectedGender;
@@ -26,13 +28,18 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   // For profile picture storage (optional)
   File? _profileImage;
 
+  // For DOB dropdowns
+  int? _selectedBirthDay;
+  int? _selectedBirthMonth;
+  int? _selectedBirthYear;
+
+  String? _mainFocus;
+  String? _activityIntensity;
+
   // Form keys for validation
   final _personalInfoFormKey = GlobalKey<FormState>();
   final _healthInfoFormKey = GlobalKey<FormState>();
   final _planningFormKey = GlobalKey<FormState>();
-
-  final TextEditingController _heightController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
 
   UnitSystem _selectedUnitSystem = UnitSystem.metric;
 
@@ -47,9 +54,9 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   void dispose() {
     _pageController.dispose();
     _nameController.dispose();
-    _dobController.dispose();
     _heightController.dispose();
     _weightController.dispose();
+    _goalWeightController.dispose();
     super.dispose();
   }
 
@@ -76,7 +83,10 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             Text(
               title,
               style: const TextStyle(
-                  fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 20),
             child,
@@ -97,8 +107,9 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           // Profile Picture Picker (optional)
           CircleAvatar(
             radius: 50,
-            backgroundImage:
-                _profileImage != null ? FileImage(_profileImage!) : null,
+            backgroundImage: _profileImage != null
+                ? FileImage(_profileImage!)
+                : null,
             child: _profileImage == null
                 ? const Icon(Icons.person, size: 50, color: Colors.white70)
                 : null,
@@ -113,11 +124,24 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           // Name Input
           TextFormField(
             controller: _nameController,
+            style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
-              labelText: 'Name',
               filled: true,
-              fillColor: Colors.white70,
-              border: OutlineInputBorder(),
+              fillColor: Color.fromARGB(150, 0, 0, 0),
+              labelText: 'Name',
+              labelStyle: TextStyle(color: Colors.white70),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -133,69 +157,113 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Birthday Input (MM/DD/YYYY) with stricter validation
-          TextFormField(
-            controller: _dobController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Birthday (MM/DD/YYYY)',
-              filled: true,
-              fillColor: Colors.white70,
-              border: OutlineInputBorder(),
+          // Date of Birth Dropdowns
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Date of Birth',
+              style: TextStyle(color: Colors.white70, fontSize: 16),
             ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Enter your birthday';
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Month Dropdown
+              Expanded(
+                flex: 2,
+                child: _buildDropdown(
+                  hint: 'Month',
+                  value: _selectedBirthMonth,
+                  items: List.generate(12, (i) => i + 1),
+                  onChanged: (val) => setState(() => _selectedBirthMonth = val),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Day Dropdown
+              Expanded(
+                flex: 1,
+                child: _buildDropdown(
+                  hint: 'Day',
+                  value: _selectedBirthDay,
+                  items: List.generate(31, (i) => i + 1),
+                  onChanged: (val) => setState(() => _selectedBirthDay = val),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Year Dropdown
+              Expanded(
+                flex: 2,
+                child: _buildDropdown(
+                  hint: 'Year',
+                  value: _selectedBirthYear,
+                  items: List.generate(DateTime.now().year - 1899, (i) => DateTime.now().year - i),
+                  onChanged: (val) => setState(() => _selectedBirthYear = val),
+                ),
+              ),
+            ],
+          ),
+          // Combined validator for all three date fields
+          FormField<bool>(
+            initialValue: true,
+            validator: (_) {
+              if (_selectedBirthYear == null || _selectedBirthMonth == null || _selectedBirthDay == null) {
+                return 'Please select a full date of birth.';
               }
-
-              // Allow only digits and slashes
-              final validChars = RegExp(r'^[0-9/]+$');
-              if (!validChars.hasMatch(value)) {
-                return 'Use only numbers and slashes';
-              }
-
+              // Check for valid date (e.g., not Feb 30)
               try {
-                final parts = value.split('/');
-                if (parts.length != 3) return 'Enter date as MM/DD/YYYY';
-
-                final month = int.parse(parts[0]);
-                final day = int.parse(parts[1]);
-                final year = int.parse(parts[2]);
-
-                // Month and day must be valid (not zero)
-                if (month < 1 || month > 12) return 'Enter a valid month (1-12)';
-                if (day < 1 || day > 31) return 'Enter a valid day (1-31)';
-                if (year < 1930 || year > DateTime.now().year) {
-                  return 'Enter a valid year';
+                final date = DateTime(_selectedBirthYear!, _selectedBirthMonth!, _selectedBirthDay!);
+                if (date.year != _selectedBirthYear || date.month != _selectedBirthMonth || date.day != _selectedBirthDay) {
+                  return 'Invalid date selected.';
                 }
-
-                // Check invalid combinations like 02/30/2020
-                final date = DateTime(year, month, day);
-                if (date.month != month || date.day != day) return 'Invalid date';
-
-              } catch (_) {
-                return 'Enter a valid date';
+              } catch (e) {
+                return 'Invalid date selected.';
               }
-
               return null;
+            },
+            builder: (state) {
+              if (state.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0, left: 12.0),
+                  child: Text(
+                    state.errorText!,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
             },
           ),
           const SizedBox(height: 20),
 
           // Gender Dropdown
           DropdownButtonFormField<String>(
-            value: _selectedGender,
+            initialValue: _selectedGender,
+            style: const TextStyle(color: Colors.white),
+            dropdownColor: Colors.grey.shade800,
             decoration: const InputDecoration(
-              labelText: 'Gender',
               filled: true,
-              fillColor: Colors.white70,
-              border: OutlineInputBorder(),
+              fillColor: Color.fromARGB(150, 0, 0, 0),
+              labelText: 'Gender',
+              labelStyle: TextStyle(color: Colors.white70),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
             ),
             items: ['Male', 'Female', 'Other', 'Prefer not to say']
-                .map((gender) => DropdownMenuItem(
-                      value: gender,
-                      child: Text(gender),
-                    ))
+                .map(
+                  (gender) =>
+                      DropdownMenuItem(value: gender, child: Text(gender)),
+                )
                 .toList(),
             onChanged: (value) {
               setState(() {
@@ -208,6 +276,254 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
               }
               return null;
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Reusable dropdown builder for DOB
+  Widget _buildDropdown({
+    required String hint,
+    required int? value,
+    required List<int> items,
+    required ValueChanged<int?> onChanged,
+  }) {
+    return DropdownButtonFormField<int>(
+      initialValue: value,
+      hint: Text(hint, style: const TextStyle(color: Colors.white70)),
+      style: const TextStyle(color: Colors.white),
+      dropdownColor: Colors.grey.shade800,
+      decoration: const InputDecoration(
+        filled: true,
+        fillColor: Color.fromARGB(150, 0, 0, 0),        
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+        errorBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
+        focusedErrorBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
+      ),
+      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item.toString()))).toList(),
+      onChanged: onChanged,
+      validator: (val) {
+        // Individual validation is handled by the combined FormField below the Row
+        if (val == null) {
+          // This message won't be shown, but it triggers the error state
+          return '';
+        }
+        return null;
+      },
+      // Hide the default error text to use our custom one
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      menuMaxHeight: 300,
+    );
+  }
+
+  // Build Step 2: Health Info (Height, Weight, Unit System)
+  Widget _buildHealthInfoStep() {
+    return Form(
+      key: _healthInfoFormKey,
+      child: Column(
+        children: [
+          SegmentedButton<UnitSystem>(
+            segments: const <ButtonSegment<UnitSystem>>[
+              ButtonSegment<UnitSystem>(
+                value: UnitSystem.metric,
+                label: Text('Metric (cm / kg)'),
+              ),
+              ButtonSegment<UnitSystem>(
+                value: UnitSystem.imperial,
+                label: Text('Imperial (in / lb)'),
+              ),
+            ],
+            selected: <UnitSystem>{_selectedUnitSystem},
+            onSelectionChanged: (Set<UnitSystem> newSelection) {
+              setState(() {
+                _selectedUnitSystem = newSelection.first;
+              });
+            },
+            style: SegmentedButton.styleFrom(
+              backgroundColor: Colors.grey.shade800,
+              foregroundColor: Colors.white,
+              selectedForegroundColor: Colors.white,
+              selectedBackgroundColor: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: _heightController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Color.fromARGB(150, 0, 0, 0),
+              labelText: _selectedUnitSystem == UnitSystem.metric
+                  ? 'Height (cm)'
+                  : 'Height (in)',
+              labelStyle: const TextStyle(color: Colors.white70),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white),
+              ),
+              errorBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+              focusedErrorBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+            ),
+            keyboardType: TextInputType.number,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty || double.tryParse(v) == null)
+                ? 'Enter a valid height'
+                : null,
+          ),
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: _weightController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Color.fromARGB(150, 0, 0, 0),
+              labelText: _selectedUnitSystem == UnitSystem.metric
+                  ? 'Weight (kg)'
+                  : 'Weight (lb)',
+              labelStyle: const TextStyle(color: Colors.white70),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white),
+              ),
+              errorBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+              focusedErrorBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+            ),
+            keyboardType: TextInputType.number,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty || double.tryParse(v) == null)
+                ? 'Enter a valid weight'
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build Step 3: Planning Info
+  Widget _buildPlanningInfoStep() {
+    return Form(
+      key: _planningFormKey,
+      child: Column(
+        children: [
+          // Main Focus Dropdown
+          DropdownButtonFormField<String>(
+            initialValue: _mainFocus,
+            style: const TextStyle(color: Colors.white),
+            dropdownColor: Colors.grey.shade800,
+            decoration: const InputDecoration(
+              filled: true,
+              fillColor: Color.fromARGB(150, 0, 0, 0),
+              labelText: 'Main Focus',
+              labelStyle: TextStyle(color: Colors.white70),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+            ),
+            items:
+                [
+                      'Strength',
+                      'Cardio',
+                    ]
+                    .map(
+                      (focus) =>
+                          DropdownMenuItem(value: focus, child: Text(focus)),
+                    )
+                    .toList(),
+            onChanged: (value) => setState(() => _mainFocus = value),
+            validator: (value) =>
+                value == null ? 'Please select a main focus' : null,
+          ),
+          const SizedBox(height: 20),
+
+          // Goal Weight Input
+          TextFormField(
+            controller: _goalWeightController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Color.fromARGB(150, 0, 0, 0),
+              labelText:
+                  'Goal Weight (${_selectedUnitSystem == UnitSystem.metric ? "kg" : "lb"})',
+              labelStyle: const TextStyle(color: Colors.white70),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white),
+              ),
+              errorBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+              focusedErrorBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+            ),
+            keyboardType: TextInputType.number,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty || double.tryParse(v) == null)
+                ? 'Enter a valid goal weight'
+                : null,
+          ),
+          const SizedBox(height: 20),
+
+          // Desired Activity Intensity Dropdown
+          DropdownButtonFormField<String>(
+            initialValue: _activityIntensity,
+            style: const TextStyle(color: Colors.white),
+            dropdownColor: Colors.grey.shade800,
+            decoration: const InputDecoration(
+              filled: true,
+              fillColor: Color.fromARGB(150, 0, 0, 0),
+              labelText: 'Desired Activity Intensity',
+              labelStyle: TextStyle(color: Colors.white70),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.redAccent),
+              ),
+            ),
+            items: ['Light', 'Moderate', 'Intense']
+                .map(
+                  (intensity) => DropdownMenuItem(
+                    value: intensity,
+                    child: Text(intensity),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) => setState(() => _activityIntensity = value),
+            validator: (value) =>
+                value == null ? 'Please select an intensity level' : null,
           ),
         ],
       ),
@@ -230,8 +546,9 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     if (canProceed) {
       if (_currentPage < _promptTitles.length - 1) {
         _pageController.nextPage(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.ease);
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.ease,
+        );
       } else {
         // When finished, go to Home Screen
         Navigator.pushReplacement(
@@ -251,7 +568,6 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_promptTitles[_currentPage]),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -261,10 +577,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
         children: [
           // Background image
           SizedBox.expand(
-            child: Image.asset(
-              'assets/images/blur_bg.png',
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset('assets/images/blur_bg_dark.png', fit: BoxFit.cover),
           ),
 
           // PageView for multi-step personalization
@@ -278,74 +591,18 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             children: [
               // Step 1: Personal Info
               _buildStep(
-                title: 'Step 1: Personal Info',
+                title: 'Personal Info',
                 child: _buildPersonalInfoStep(),
               ),
 
               // Step 2: Health Info (placeholder for now)
               _buildStep(
-                title: 'Step 2: Health Info', 
-                child: Column(
-                  children: [
-                    SegmentedButton<UnitSystem>(
-                      segments: const <ButtonSegment<UnitSystem>>[
-                        ButtonSegment<UnitSystem>(
-                            value: UnitSystem.metric,
-                            label: Text('Metric (cm / kg)')),
-                        ButtonSegment<UnitSystem>(
-                            value: UnitSystem.imperial,
-                            label: Text('Imperial (in / lb)')),
-                      ],
-                      selected: <UnitSystem>{_selectedUnitSystem},
-                      onSelectionChanged: (Set<UnitSystem> newSelection) {
-                        setState(() {
-                          _selectedUnitSystem = newSelection.first;
-                        });
-                      },
-                      style: SegmentedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade800,
-                        foregroundColor: Colors.white,
-                        selectedForegroundColor: Colors.white,
-                        selectedBackgroundColor: Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: _heightController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: _selectedUnitSystem == UnitSystem.metric ? 'Height (cm)' : 'Height (in)',
-                        labelStyle: TextStyle(color: Colors.white70),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: _weightController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: _selectedUnitSystem == UnitSystem.metric ? 'Weight (kg)' : 'Weight (lb)',
-                        labelStyle: TextStyle(color: Colors.white70),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                ),
+                title: 'Health Info',
+                child: _buildHealthInfoStep(),
               ),
               _buildStep(
-                title: 'Step 3: Planning',
-                child: Form(
-                  key: _planningFormKey, // Added form key for validation
-                  child: const Text(
-                    'ADD FIELDS FOR PLANNING INFO (Main Focus, Goal Weight, Desired Activity Intensity)',
-                    style: TextStyle(color: Colors.white70),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                title: 'Planning',
+                child: _buildPlanningInfoStep(),
               ),
             ],
           ),
@@ -362,17 +619,22 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                   TextButton(
                     onPressed: () {
                       _pageController.previousPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.ease);
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.ease,
+                      );
                     },
-                    child: const Text('Back', style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      'Back',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   )
                 else
                   const SizedBox(),
                 ElevatedButton(
                   onPressed: _goToNextPage, // Updated button to use validation
                   child: Text(
-                      _currentPage < _promptTitles.length - 1 ? 'Next' : 'Finish'),
+                    _currentPage < _promptTitles.length - 1 ? 'Next' : 'Finish',
+                  ),
                 ),
               ],
             ),
