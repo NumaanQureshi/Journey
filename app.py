@@ -550,3 +550,21 @@ def delete_user(user_id):
 
 if __name__ == '__main__':
     app.run(debug=True)
+# environment files
+.vscode/
+.venv/
+.env
+.DS_Store
+
+# Flutter files
+.dart_tool
+android/
+assets/
+ios/
+lib/
+linux/
+macos/
+test/
+web/
+windows/
+.flutter-plugins-dependencies
