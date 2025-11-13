@@ -18,6 +18,10 @@ class AuthService {
   }
   final _storage = const FlutterSecureStorage();
 
+  Future<String?> getToken() async {
+    return await _storage.read(key: 'auth_token');
+  }
+
   Future<bool> signUp(String email, String password) async {
     try {
       final response = await http.post(
