@@ -1,9 +1,7 @@
-# .env file
+# local files
 .env
-.DS_STORE
-
-# .venv file
 .venv/
+__pycache__/
 
 # Flutter files
 .dart_tool

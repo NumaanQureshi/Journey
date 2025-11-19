@@ -1,2 +1,12 @@
-INSERT INTO profiles (user_id, age, gender, height_in, weight_lb)
-VALUES (%s, %s, %s, %s, %s)
+INSERT INTO profiles (
+        user_id,
+        name,
+        age,
+        gender,
+        height_in,
+        weight_lb,
+        main_focus,
+        goal_weight_lb,
+        activity_intensity
+    )
+VALUES (%s, NULL, %s, %s, %s, %s, NULL, NULL, NULL) ON CONFLICT (user_id) DO NOTHING;
