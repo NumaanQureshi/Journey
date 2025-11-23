@@ -11,14 +11,14 @@ class _JourneyAiScreenState extends State<JourneyAiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: const Color.fromARGB(255, 37, 37, 37),
+      backgroundColor: const Color(0xFF1A1A1A),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 'Journey AI Screen',
                 style: TextStyle(
                     fontSize: 24,
