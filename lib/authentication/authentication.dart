@@ -1,20 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter/foundation.dart';
 
 class AuthService {
   String get _baseUrl {
-    if (kIsWeb) {
-      // chrome
-      return 'http://127.0.0.1:5000/api/auth';
-    } 
-    else if (defaultTargetPlatform == TargetPlatform.android) {
-      // android
-      return 'http://10.0.2.2:5000/api/auth';
-    }
-    // iOS + all other platforms
-    return 'http://localhost:5000/api/auth';
+    return 'https://journey-backend-zqz7.onrender.com/api/auth';
   }
   final _storage = const FlutterSecureStorage();
 
