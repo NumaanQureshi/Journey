@@ -1,7 +1,10 @@
-# local files
-.env
+# local python files
 .venv/
+venv/
 __pycache__/
+
+# local secrets
+.env
 
 # Flutter files
 .dart_tool
