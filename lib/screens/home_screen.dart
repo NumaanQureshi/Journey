@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'profile_screen.dart';
 import 'side_menu.dart';
 import 'journeyai_screen.dart';
-// import '../widgets/video_background.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,12 +11,55 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+enum DayStatus {missed, rest, logged}
+
+class DayLog {
+  final int dayIndex; // sunday = 0, saturday = 6
+  DayStatus status;
+  DayLog({required this.dayIndex, this.status = DayStatus.missed});
+}
+
 class HomeContent extends StatelessWidget
 {
-  const HomeContent({super.key});
+  final List<DayLog> dayLogs;  
+  final void Function(int dayIndex, DayStatus newStatus) updateStatus;
+
+  const HomeContent({super.key, required this.dayLogs, required this.updateStatus});
+  
+  Color _getColorForStatus(DayStatus status) {
+  switch (status) {
+    case DayStatus.logged:
+      return const Color(0xFF6CDC00); 
+    case DayStatus.rest:
+      return const Color(0xFF7ED5EA); 
+    default:
+      return const Color(0xFFD4D4D4); 
+  }
+}
+
+  Widget buildDayIcon(DayLog log) {
+  final key = ValueKey(log.dayIndex);
+  final color = _getColorForStatus(log.status);
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+    child: Container(
+      key: key, 
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+    ),
+  );
+}
+
+  // void _updateDayIcon(ValueKey key){
+    
+  // }
+
   @override
   Widget build(BuildContext context) {
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -24,10 +67,21 @@ class HomeContent extends StatelessWidget
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text(
-              'Welcome to Journey',
-              style: TextStyle(color: Colors.amber, fontSize: 24, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+              'Journey',
+              style: TextStyle(
+                fontFamily: 'OCR Extended A',
+                fontSize: 40,
+                color: Color(0xFFFBBF18),
+              ),
             ),
+            const SizedBox(height: 40),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ...dayLogs.map((log) => buildDayIcon(log)).toList(),
+              ],
+            ),
+            SizedBox(height: 500)
           ],
         ),
       ),
@@ -36,22 +90,38 @@ class HomeContent extends StatelessWidget
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 1;
+  int _selectedIndex = 0;
 
-  static const List<Widget> _screens = <Widget>[
-    HomeContent(),
-    JourneyAiScreen(),
-  ];
+  final List<DayLog> _dayLogs = List.generate(7, (index) => DayLog(dayIndex: index));
 
   // navigation bar destinations
-  static const List<Widget> _navBarDestinations = <Widget>[
+  static final List<Widget> _navBarDestinations = <Widget>[
     NavigationDestination(
-      icon: Icon(Icons.home), 
+      icon: const Icon(
+        Icons.home_outlined,
+        color: Colors.white,
+        size: 30,
+      ),
+      selectedIcon: const Icon(
+        Icons.home,
+        color: Colors.white,
+        size: 30,
+      ), 
       label: 'Home'),
     NavigationDestination(
-      icon: ImageIcon(AssetImage("assets/images/journey_logo.png")), 
+      icon: SvgPicture.asset(
+        'assets/images/updated_journey_logo.svg',
+        width: 24,
+        height: 24,
+      ),
       label: 'Journey AI'),
   ];
+
+  void _updateDayStatus(int dayIndex, DayStatus newStatus) {
+    setState(() {
+      _dayLogs[dayIndex].status = newStatus;
+    });
+  }
 
   void _onDestinationSelected(int index) {
     setState(() => _selectedIndex = index);
@@ -59,19 +129,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screens = <Widget>[
+      HomeContent(dayLogs: _dayLogs, updateStatus: _updateDayStatus),
+      const JourneyAiScreen(),
+    ];
+
     return Scaffold(
       drawer: const SideMenu(currentScreen: 'Home'),
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        title: const Text(
-          'Journey',
-          style: TextStyle(
-            fontFamily: 'OCR Extended A',
-            fontSize: 40,
-            color: Color(0xFFFBBF18),
-          ),
-        ),
+        backgroundColor: Color(0xFF1A1A1A),
         leading: Builder(
           builder: (context) => IconButton(
             color: Colors.blue,
@@ -79,13 +145,6 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Menu',
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4.0),
-          child: Container(
-              color: Colors.amber,
-              height: 4.0,
-          )
         ),
         actions: [
           IconButton(
@@ -101,13 +160,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      // backgroundColor: const Color.fromARGB(255, 37, 37, 37),
+      backgroundColor: const Color(0xFF1A1A1A),
       extendBodyBehindAppBar: true,
-      body: _screens.elementAt(_selectedIndex),
+      body: screens.elementAt(_selectedIndex),
       bottomNavigationBar: NavigationBar(
         destinations: _navBarDestinations,
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
+        backgroundColor: Color(0xFF2C2C2C),
+        indicatorColor: Colors.black,
+        labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((Set<WidgetState> states) {
+          // selected labels
+          if (states.contains(WidgetState.selected)) {
+            return const TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+            );
+          }
+          // unselected labels
+          return const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          );
+        }),
       ),
     );
   }
