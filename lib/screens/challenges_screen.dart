@@ -1,17 +1,9 @@
-// -------------------------------
-// FULL WORKING CHALLENGES SYSTEM
-// DAILY + WEEKLY REAL-LIFE RESET
-// COMPACT CARD + INCREMENT 1 + BACKEND TODO
-// --------------------------------
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'side_menu.dart';
 
-// -------------------------------------------------------------
 // Challenge Model
-// -------------------------------------------------------------
 class Challenge {
   final String type; // 'Daily', 'Weekly', 'All-Time'
   final String title;
@@ -47,10 +39,9 @@ class Challenge {
   }
 }
 
-// -------------------------------------------------------------
 // Challenge Lists
 // (Daily, Weekly, All-Time)
-// -------------------------------------------------------------
+
 final List<Challenge> allDailyChallenges = [
   Challenge(type: 'Daily', title: 'Push-Up Power', description: 'Complete 30 push-ups.', goal: 30, icon: Icons.fitness_center, color: const Color(0xFFBF6A02)),
   Challenge(type: 'Daily', title: 'Cardio Blitz', description: 'Spend 20 minutes on cardio.', goal: 20, icon: Icons.directions_run, color: const Color(0xFF1E88E5)),
@@ -95,9 +86,9 @@ final List<Challenge> allTimeChallenges = [
   Challenge(type: 'All-Time', title: 'Journey Master', description: 'Complete all achievements.', goal: 4, icon: Icons.emoji_events, color: const Color(0xFFFFD700)),
 ];
 
-// -------------------------------------------------------------
+
 // Challenge Manager
-// -------------------------------------------------------------
+
 class ChallengeManager {
   static List<Challenge> dailyChallenges = [];
   static List<Challenge> weeklyChallenges = [];
@@ -151,9 +142,8 @@ class ChallengeManager {
   }
 }
 
-// -------------------------------------------------------------
+
 // Countdown Timer
-// -------------------------------------------------------------
 class CountdownTimer extends StatefulWidget {
   final DateTime Function() getTarget;
   final String label;
@@ -214,9 +204,8 @@ class _CountdownTimerState extends State<CountdownTimer> {
   }
 }
 
-// -------------------------------------------------------------
 // Challenge Card (Compact)
-// -------------------------------------------------------------
+
 class ChallengeCard extends StatelessWidget {
   final Challenge challenge;
   final VoidCallback? onTap;
@@ -278,9 +267,8 @@ class ChallengeCard extends StatelessWidget {
   }
 }
 
-// -------------------------------------------------------------
 // Main Challenges Page
-// -------------------------------------------------------------
+
 class Challenges extends StatefulWidget {
   const Challenges({super.key});
 
