@@ -21,15 +21,16 @@ dependencies:
   video_player: ^2.6.1
   supabase_flutter: ^2.10.3
   google_fonts: ^6.3.2
-  provider: ^6.0.5
-  shared_preferences: ^2.0.15
+  provider: ^6.1.5+1
+  shared_preferences: ^2.5.3
   path_provider: ^2.1.1
   share_plus: ^7.2.1
   image_picker: ^1.0.4
   fl_chart: ^0.64.0
   http: ^1.1.0
   flutter_secure_storage: ^9.2.4
-
+  flutter_svg: ^2.2.3
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -62,3 +63,7 @@ flutter:
     - assets/images/home_bg.png
     - assets/images/profile_bg.png
     - assets/images/workout_bg.png
+    - assets/images/blur_bg_dark.png
+    - assets/images/journey_logo.png
+    - assets/images/updated_journey_logo.png
+    - assets/images/updated_journey_logo.svg

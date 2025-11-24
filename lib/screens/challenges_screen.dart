@@ -1,9 +1,17 @@
+// -------------------------------
+// FULL WORKING CHALLENGES SYSTEM
+// DAILY + WEEKLY REAL-LIFE RESET
+// COMPACT CARD + INCREMENT 1 + BACKEND TODO
+// --------------------------------
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'side_menu.dart';
 
-// --- Challenge Model ---
+// -------------------------------------------------------------
+// Challenge Model
+// -------------------------------------------------------------
 class Challenge {
   final String type; // 'Daily', 'Weekly', 'All-Time'
   final String title;
@@ -33,34 +41,52 @@ class Challenge {
       if (progress >= goal) {
         progress = goal;
         completed = true;
-        // TODO: Send completion status to backend
-      } else {
-        // TODO: Optionally update progress in backend
+        // TODO: Send backend event: user completed this challenge
       }
     }
   }
 }
 
-// --- Sample Data ---
-// Todo: Static but will add more capped 5 daily challenges per day
+// -------------------------------------------------------------
+// Challenge Lists
+// (Daily, Weekly, All-Time)
+// -------------------------------------------------------------
 final List<Challenge> allDailyChallenges = [
   Challenge(type: 'Daily', title: 'Push-Up Power', description: 'Complete 30 push-ups.', goal: 30, icon: Icons.fitness_center, color: const Color(0xFFBF6A02)),
   Challenge(type: 'Daily', title: 'Cardio Blitz', description: 'Spend 20 minutes on cardio.', goal: 20, icon: Icons.directions_run, color: const Color(0xFF1E88E5)),
   Challenge(type: 'Daily', title: 'Try Something New', description: 'Log a new exercise.', goal: 1, icon: Icons.lightbulb_outline, color: const Color(0xFF667DB5)),
   Challenge(type: 'Daily', title: 'Stretch it Out', description: 'Stretch 10 mins.', goal: 10, icon: Icons.accessibility, color: const Color(0xFFF57C00)),
   Challenge(type: 'Daily', title: 'Squat Session', description: 'Complete 20 squats.', goal: 20, icon: Icons.accessibility_new, color: const Color(0xFF0288D1)),
+  Challenge(type: 'Daily', title: 'Plank Hold', description: 'Hold plank for 90 seconds.', goal: 90, icon: Icons.sports_gymnastics, color: const Color(0xFF8bc34a)),
+  Challenge(type: 'Daily', title: 'Jumping Jack Jolt', description: 'Do 50 jumping jacks.', goal: 50, icon: Icons.directions_run, color: const Color(0xFFE91E63)),
+  Challenge(type: 'Daily', title: 'Wall Sit Warrior', description: 'Hold a wall sit for 60 seconds.', goal: 60, icon: Icons.accessibility_new, color: const Color(0xFF9C27B0)),
+  Challenge(type: 'Daily', title: 'Bicep Curl Boost', description: 'Do 20 bicep curls.', goal: 20, icon: Icons.fitness_center, color: const Color(0xFFFF9800)),
+  Challenge(type: 'Daily', title: 'Lunge Challenge', description: 'Complete 20 lunges.', goal: 20, icon: Icons.accessibility, color: const Color(0xFF00BCD4)),
+  Challenge(type: 'Daily', title: 'High Knee Hustle', description: 'Do 40 high knees.', goal: 40, icon: Icons.directions_run, color: const Color(0xFF673AB7)),
+  Challenge(type: 'Daily', title: 'Mountain Climber Mayhem', description: 'Do 30 mountain climbers.', goal: 30, icon: Icons.sports_martial_arts, color: const Color(0xFF795548)),
+  Challenge(type: 'Daily', title: 'Sit-Up Surge', description: 'Complete 25 sit-ups.', goal: 25, icon: Icons.accessibility_new, color: const Color(0xFFFF5722)),
+  Challenge(type: 'Daily', title: 'Burpee Blast', description: 'Do 15 burpees.', goal: 15, icon: Icons.fitness_center, color: const Color(0xFF607D8B)),
+  Challenge(type: 'Daily', title: 'Arm Raise Rampage', description: 'Do 30 arm raises.', goal: 30, icon: Icons.accessibility_new, color: const Color(0xFF009688)),
 ];
 
-// Todo: Static but will add more capped 3 weekly challenges per week
 final List<Challenge> allWeeklyChallenges = [
   Challenge(type: 'Weekly', title: 'New PR', description: 'Hit a personal record.', goal: 1, icon: Icons.trending_up, color: const Color(0xFF43A047)),
   Challenge(type: 'Weekly', title: 'Lower Body Focus', description: 'Log a lower body session.', goal: 1, icon: Icons.accessibility_new, color: const Color(0xFFD81B60)),
   Challenge(type: 'Weekly', title: '3-Workout Week', description: 'Complete 3 workouts.', goal: 3, icon: Icons.calendar_today, color: const Color(0xFF00ACC1)),
   Challenge(type: 'Weekly', title: 'Cardio King/Queen', description: 'Do at least 60 minutes of cardio.', goal: 60, icon: Icons.directions_run, color: const Color(0xFFFF7043)),
   Challenge(type: 'Weekly', title: 'Strength Builder', description: 'Complete 4 strength training sessions.', goal: 4, icon: Icons.fitness_center, color: const Color(0xFF8E24AA)),
+  Challenge(type: 'Weekly', title: 'Total Volume', description: 'Lift 1000 lbs combined volume.', goal: 1000, icon: Icons.scale, color: const Color(0xFF795548)),
+  Challenge(type: 'Weekly', title: 'Flexibility Focus', description: 'Stretch 30 minutes total.', goal: 30, icon: Icons.accessibility, color: const Color(0xFFFF9800)),
+  Challenge(type: 'Weekly', title: 'Endurance Extra', description: 'Run 10 km total.', goal: 10, icon: Icons.directions_run, color: const Color(0xFF1E88E5)),
+  Challenge(type: 'Weekly', title: 'Core Strength', description: 'Complete 3 core workouts.', goal: 3, icon: Icons.sports_gymnastics, color: const Color(0xFF8BC34A)),
+  Challenge(type: 'Weekly', title: 'Balance Booster', description: 'Do 20 balance exercises.', goal: 20, icon: Icons.accessibility_new, color: const Color(0xFFE91E63)),
+  Challenge(type: 'Weekly', title: 'Upper Body Power', description: 'Do 4 upper body workouts.', goal: 4, icon: Icons.fitness_center, color: const Color(0xFF9C27B0)),
+  Challenge(type: 'Weekly', title: 'Speed Challenge', description: 'Complete 5 sprints.', goal: 5, icon: Icons.directions_run, color: const Color(0xFFFF5722)),
+  Challenge(type: 'Weekly', title: 'Stamina Builder', description: 'Exercise 120 mins this week.', goal: 120, icon: Icons.fitness_center, color: const Color(0xFF607D8B)),
+  Challenge(type: 'Weekly', title: 'HIIT Hero', description: 'Complete 2 HIIT workouts.', goal: 2, icon: Icons.sports_martial_arts, color: const Color(0xFF009688)),
+  Challenge(type: 'Weekly', title: 'Mind & Body', description: 'Complete 2 yoga sessions.', goal: 2, icon: Icons.self_improvement, color: const Color(0xFF795548)),
 ];
 
-// Static but will add more for All-Time Achievements 
 final List<Challenge> allTimeChallenges = [
   Challenge(type: 'All-Time', title: 'Centurion', description: 'Log 100 total workouts.', goal: 100, icon: Icons.military_tech, color: const Color(0xFABBAC11)),
   Challenge(type: 'All-Time', title: 'Heavy Lifter', description: 'Lift a total of 1000 lbs.', goal: 1000, icon: Icons.scale, color: const Color(0xFF5E35B1)),
@@ -69,36 +95,110 @@ final List<Challenge> allTimeChallenges = [
   Challenge(type: 'All-Time', title: 'Journey Master', description: 'Complete all achievements.', goal: 4, icon: Icons.emoji_events, color: const Color(0xFFFFD700)),
 ];
 
-// --- Countdown Widget ---
-class CountdownTimer extends StatefulWidget {
-  final DateTime targetTime;
-  final String label;
-  final VoidCallback? onReset;
+// -------------------------------------------------------------
+// Challenge Manager
+// -------------------------------------------------------------
+class ChallengeManager {
+  static List<Challenge> dailyChallenges = [];
+  static List<Challenge> weeklyChallenges = [];
 
-  const CountdownTimer({super.key, required this.targetTime, required this.label, this.onReset});
+  static Challenge _copy(Challenge c) {
+    return Challenge(
+      type: c.type,
+      title: c.title,
+      description: c.description,
+      goal: c.goal,
+      icon: c.icon,
+      color: c.color,
+      progress: 0,
+      completed: false,
+    );
+  }
+
+  static List<Challenge> _cycle(List<Challenge> source, int count) {
+    source.shuffle();
+    return List.generate(count, (i) => _copy(source[i]));
+  }
+
+  // Daily reset at midnight
+  static void resetDaily() {
+    dailyChallenges = _cycle(allDailyChallenges, 5);
+  }
+
+  // Weekly reset at Sunday midnight
+  static void resetWeekly() {
+    weeklyChallenges = _cycle(allWeeklyChallenges, 3);
+  }
+
+  static DateTime getNextDailyReset() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+  }
+
+  static DateTime getNextWeeklyReset() {
+    final now = DateTime.now();
+    final daysUntilSunday = (7 - now.weekday) % 7;
+    final nextSunday = now.add(Duration(days: daysUntilSunday));
+    return DateTime(nextSunday.year, nextSunday.month, nextSunday.day); // Sunday midnight
+  }
+
+  static void updateJourneyMaster() {
+    final jm = allTimeChallenges.firstWhere((x) => x.title == "Journey Master");
+    final count = allTimeChallenges.where((x) => x.title != "Journey Master" && x.completed).length;
+    jm.progress = count.toDouble();
+    jm.completed = jm.progress >= jm.goal;
+    // TODO: Send backend event to update Journey Master automatically
+  }
+}
+
+// -------------------------------------------------------------
+// Countdown Timer
+// -------------------------------------------------------------
+class CountdownTimer extends StatefulWidget {
+  final DateTime Function() getTarget;
+  final String label;
+  final VoidCallback onExpire;
+
+  const CountdownTimer({
+    super.key,
+    required this.getTarget,
+    required this.label,
+    required this.onExpire,
+  });
 
   @override
   State<CountdownTimer> createState() => _CountdownTimerState();
 }
 
 class _CountdownTimerState extends State<CountdownTimer> {
-  late Duration remaining;
   late Timer timer;
+  Duration remaining = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    remaining = widget.targetTime.difference(DateTime.now());
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        remaining = widget.targetTime.difference(DateTime.now());
-        if (remaining.isNegative) {
-          timer.cancel();
-          if (widget.onReset != null) widget.onReset!();
-          // TODO: Trigger daily/weekly challenge reset via backend
-        }
-      });
+    _tick();
+    timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  void _tick() {
+    final now = DateTime.now();
+    final target = widget.getTarget();
+    setState(() {
+      remaining = target.difference(now);
+      if (remaining.isNegative) {
+        widget.onExpire();
+        remaining = widget.getTarget().difference(DateTime.now());
+      }
     });
+  }
+
+  String fmt(Duration d) {
+    if (d.isNegative) return "00:00:00";
+    final hh = d.inHours.toString().padLeft(2, "0");
+    final mm = d.inMinutes.remainder(60).toString().padLeft(2, "0");
+    final ss = d.inSeconds.remainder(60).toString().padLeft(2, "0");
+    return "$hh:$mm:$ss";
   }
 
   @override
@@ -107,23 +207,16 @@ class _CountdownTimerState extends State<CountdownTimer> {
     super.dispose();
   }
 
-  String formatDuration(Duration d) {
-    final hours = d.inHours.remainder(24).toString().padLeft(2, '0');
-    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "${d.inDays}d $hours:$minutes:$seconds";
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Text(
-      '${widget.label}: ${formatDuration(remaining)}',
-      style: GoogleFonts.kanit(color: const Color(0xFFFBBF18), fontSize: 14),
-    );
+    return Text("${widget.label}: ${fmt(remaining)}",
+        style: GoogleFonts.kanit(color: const Color(0xFFFBBF18), fontSize: 14));
   }
 }
 
-// --- Challenge Card Widget ---
+// -------------------------------------------------------------
+// Challenge Card (Compact)
+// -------------------------------------------------------------
 class ChallengeCard extends StatelessWidget {
   final Challenge challenge;
   final VoidCallback? onTap;
@@ -132,55 +225,50 @@ class ChallengeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 140,
-      child: GestureDetector(
-        onTap: onTap,
+    final Color cardColor = challenge.color.withAlpha(220);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 140, // compact width
         child: Card(
-          color: challenge.color.withOpacity(0.85),
+          color: cardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(8),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Stack(
                   alignment: Alignment.topRight,
                   children: [
-                    Icon(challenge.icon, color: Colors.white, size: 32),
+                    Icon(challenge.icon, color: Colors.white, size: 28),
                     if (challenge.completed)
-                      const Icon(Icons.check_circle, color: Colors.greenAccent, size: 20),
+                      const Icon(Icons.check_circle,
+                          color: Colors.greenAccent, size: 18),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  challenge.title,
-                  style: GoogleFonts.mavenPro(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  challenge.description,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
+                Text(challenge.title,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.mavenPro(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text(challenge.description,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                const SizedBox(height: 6),
                 LinearProgressIndicator(
                   value: challenge.progressPercentage,
                   backgroundColor: Colors.white24,
                   valueColor: AlwaysStoppedAnimation<Color>(
                       challenge.completed ? Colors.greenAccent : Colors.white),
-                  minHeight: 6,
+                  minHeight: 5,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${challenge.progress.toInt()}/${challenge.goal.toInt()}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
+                const SizedBox(height: 2),
+                Text("${challenge.progress.toInt()}/${challenge.goal.toInt()}",
+                    style: const TextStyle(color: Colors.white70, fontSize: 10)),
               ],
             ),
           ),
@@ -190,7 +278,9 @@ class ChallengeCard extends StatelessWidget {
   }
 }
 
-// --- Main Challenges Screen ---
+// -------------------------------------------------------------
+// Main Challenges Page
+// -------------------------------------------------------------
 class Challenges extends StatefulWidget {
   const Challenges({super.key});
 
@@ -199,98 +289,54 @@ class Challenges extends StatefulWidget {
 }
 
 class _ChallengesState extends State<Challenges> {
-  late List<Challenge> dailyChallenges;
-  late List<Challenge> weeklyChallenges;
+  late DateTime dailyReset;
+  late DateTime weeklyReset;
 
   @override
   void initState() {
     super.initState();
-    _shuffleDailyChallenges();
-    _shuffleWeeklyChallenges();
+    ChallengeManager.resetDaily();
+    ChallengeManager.resetWeekly();
+    dailyReset = ChallengeManager.getNextDailyReset();
+    weeklyReset = ChallengeManager.getNextWeeklyReset();
   }
 
-  void _shuffleDailyChallenges() {
-    dailyChallenges = List.from(allDailyChallenges);
-    // Limit to 5 daily challenges for the day
-    if (dailyChallenges.length > 5) {
-      dailyChallenges = dailyChallenges.sublist(0, 5);
-    }
-    // TODO: Fetch daily challenges from backend for user if needed
-  }
+  int _completedCount(List<Challenge> list) =>
+      list.where((c) => c.completed).length;
 
-  void _shuffleWeeklyChallenges() {
-    weeklyChallenges = List.from(allWeeklyChallenges);
-    // Limit to 3 weekly challenges for the week
-    if (weeklyChallenges.length > 3) {
-      weeklyChallenges = weeklyChallenges.sublist(0, 3);
-    }
-    // TODO: Fetch weekly challenges from backend for user if needed
-  }
-
-  void _resetDailyChallenges() {
-    setState(() {
-      _shuffleDailyChallenges();
-    });
-    // TODO: Notify backend daily reset happened
-  }
-
-  void _resetWeeklyChallenges() {
-    setState(() {
-      _shuffleWeeklyChallenges();
-      for (var c in weeklyChallenges) {
-        c.progress = 0;
-        c.completed = false;
-      }
-    });
-    // TODO: Notify backend weekly reset happened
-  }
-
-  // Count completed challenges
-  int _completedCount(List<Challenge> challenges) =>
-      challenges.where((c) => c.completed).length;
-
-  Widget _buildSection(String title, List<Challenge> challenges,
-      {Widget? timer, int cap = 5}) {
-    final completed = _completedCount(challenges);
+  Widget _section(String title, List<Challenge> list,
+      {Widget? timer, required int cap}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: GoogleFonts.kanit(
-                color: const Color(0xFFFBBF18),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(title,
+                style: GoogleFonts.kanit(
+                    color: const Color(0xFFFBBF18),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold)),
             if (timer != null) timer,
           ],
         ),
-        const SizedBox(height: 4),
-        // Visual tracker for completed challenges
-        Text(
-          'Completed: $completed/$cap',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
-        ),
+        Text("Completed: ${_completedCount(list)}/$cap",
+            style: const TextStyle(color: Colors.white70)),
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: challenges
-              .map(
-                (c) => ChallengeCard(
-                  challenge: c,
-                  onTap: () {
-                    setState(() {
-                      // TODO: Remove click-to-increment logic later; currently for testing
-                      c.updateProgress(1); // Increment by 1 for testing
-                    });
-                  },
-                ),
-              )
+          children: list
+              .map((c) => ChallengeCard(
+                    challenge: c,
+                    onTap: () {
+                      if (c.title != "Journey Master") {
+                        c.updateProgress(1); // increment 1 per tap
+                        ChallengeManager.updateJourneyMaster(); // auto-update JM
+                        setState(() {});
+                      }
+                    },
+                  ))
               .toList(),
         ),
         const SizedBox(height: 24),
@@ -300,53 +346,50 @@ class _ChallengesState extends State<Challenges> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final nextDailyReset = DateTime(now.year, now.month, now.day + 1);
-    final daysUntilSunday = (DateTime.sunday - now.weekday) % 7;
-    final nextWeeklyReset = DateTime(now.year, now.month, now.day + daysUntilSunday + 1);
-
     return Scaffold(
       drawer: const SideMenu(currentScreen: 'Challenges'),
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Color(0xFFFBBF18)),
-        title: Text(
-          'Challenges',
-          style: GoogleFonts.lexend(color: const Color(0xFFFBBF18)),
-        ),
-        centerTitle: true,
         backgroundColor: Colors.black,
         elevation: 0,
+        centerTitle: true,
+        title: Text("Challenges",
+            style: GoogleFonts.lexend(color: const Color(0xFFFBBF18))),
       ),
       backgroundColor: const Color(0xFF252525),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSection(
-                'Daily Challenges',
-                dailyChallenges,
-                timer: CountdownTimer(
-                  targetTime: nextDailyReset,
-                  label: 'Resets in',
-                  onReset: _resetDailyChallenges,
-                ),
-                cap: 5,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _section(
+              "Daily Challenges",
+              ChallengeManager.dailyChallenges,
+              timer: CountdownTimer(
+                getTarget: () => ChallengeManager.getNextDailyReset(),
+                label: "Resets in",
+                onExpire: () {
+                  ChallengeManager.resetDaily();
+                  setState(() {});
+                },
               ),
-              _buildSection(
-                'Weekly Challenges',
-                weeklyChallenges,
-                timer: CountdownTimer(
-                  targetTime: nextWeeklyReset,
-                  label: 'Resets in',
-                  onReset: _resetWeeklyChallenges,
-                ),
-                cap: 3,
+              cap: 5,
+            ),
+            _section(
+              "Weekly Challenges",
+              ChallengeManager.weeklyChallenges,
+              timer: CountdownTimer(
+                getTarget: () => ChallengeManager.getNextWeeklyReset(),
+                label: "Resets in",
+                onExpire: () {
+                  ChallengeManager.resetWeekly();
+                  setState(() {});
+                },
               ),
-              _buildSection('All-Time Achievements', allTimeChallenges),
-            ],
-          ),
+              cap: 3,
+            ),
+            _section("All-Time Achievements", allTimeChallenges,
+                cap: allTimeChallenges.length),
+          ],
         ),
       ),
     );

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login.dart';
+import 'package:journey_application/screens/login.dart';
 import 'personalization_screen.dart';
 import '../authentication/authentication.dart';
 

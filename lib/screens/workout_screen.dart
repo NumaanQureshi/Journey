@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'side_menu.dart';
-import 'dart:core'; 
+import 'dart:core';
 
 class Workout extends StatefulWidget {
   const Workout({super.key});
@@ -22,22 +21,30 @@ class _WorkoutState extends State<Workout> {
     Colors.red,
   ];
 
+  static const List<Widget> _workoutNavBarDestinations = <Widget>[
+    NavigationDestination(
+      icon: Icon(Icons.bookmark_border, color: Colors.amber),
+      selectedIcon: Icon(Icons.bookmark, color: Colors.amber),
+      label: 'Plans',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.fitness_center, color: Colors.red, size: 36),
+      label: '',
+    ),
+    NavigationDestination(
+      selectedIcon: Icon(Icons.calendar_month, color: Colors.blue),
+      icon: Icon(Icons.calendar_today, color: Colors.blue),
+      label: 'Logs',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const SideMenu(currentScreen: 'Workout'),
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Color(0xFF1A1A1A),
         iconTheme: const IconThemeData(color: Colors.blue),
-        title: Text(
-          'Workout',
-          style: GoogleFonts.lexend(
-            color: const Color(0xFFFBBF18),
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.black,
-        elevation: 0,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
@@ -58,67 +65,54 @@ class _WorkoutState extends State<Workout> {
           ),
         ],
       ),
-      backgroundColor: const Color.fromARGB(255, 37, 37, 37),
+      backgroundColor: const Color(0xFF1A1A1A),
       body: Stack(
         children: [
-          // SizedBox.expand(
-          //   child: Image.asset(
-          //     'assets/images/workout_bg.png',
-          //     fit: BoxFit.cover,
-          //   ),
-          // ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Workout Screen',
+                    style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          indicatorColor: Colors.grey,
-          labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-        ),
-        child: NavigationBar(
+      bottomNavigationBar: NavigationBar(
+          destinations: _workoutNavBarDestinations,
           selectedIndex: _selectedIndex,
-          backgroundColor: Colors.black,
-          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
           onDestinationSelected: (int index) {
             setState(() {
               _selectedIndex = index;
             });
           },
-          destinations: const <Widget>[
-            NavigationDestination(
-              icon: Icon(
-                Icons.bookmark_border, 
-                color: Colors.amber,
-              ),
-              selectedIcon: Icon(
-                Icons.bookmark, 
-                color: Colors.amber,
-              ), 
-              label: 'Plans'
-            ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.fitness_center,
-                color: Colors.red,
-                size: 36,
-              ),
-              label: '',
-            ),
-            NavigationDestination(
-              selectedIcon: Icon(
-                Icons.calendar_month,
-                color: Colors.blue
-              ),
-              icon: Icon(
-                Icons.calendar_today,
-                color: Colors.blue
-              ),
-              label: 'Logs',
-            ),
-          ],
+          backgroundColor: Color(0xFF2C2C2C),
+          indicatorColor: Colors.black,
+          labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((Set<WidgetState> states) {
+            // selected labels
+            if (states.contains(WidgetState.selected)) {
+              return const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+              );
+            }
+            // unselected labels
+            return const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            );
+          }),
         ),
-      ),
     );
   }
 }
