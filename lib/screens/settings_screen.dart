@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
-// import '../providers/theme_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+// import 'settings/account_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -16,6 +15,21 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  // Route _createSlideRoute(Widget page) {
+  //   return PageRouteBuilder(
+  //     pageBuilder: (context, animation, secondaryAnimation) => page,
+  //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+  //       const begin = Offset(1.0, 0.0);
+  //       const end = Offset.zero;
+  //       final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.ease));
+  //       return SlideTransition(
+  //         position: animation.drive(tween),
+  //         child: child,
+  //       );
+  //     },
+  //   );
+  // }
+  
   @override
   Widget build(BuildContext context) {
     // final themeProvider = Provider.of<ThemeProvider>(context);
@@ -32,72 +46,18 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           _buildSectionHeader('General'),
-          // TODO: Add "Account Management" and "Notifications"
-          _buildSectionHeader('App Settings'),
-          // TODO: Add "Fitness Settings" and 'AI Settings'
-          _buildSectionHeader('Accessibility'),
-          // ListTile(
-          //   leading: const Icon(Icons.brightness_6),
-          //   title: const Text('Theme'),
-          //   subtitle: Text(_themeModeToString(themeProvider.themeMode)),
-          //   onTap: () => _showThemeDialog(context, themeProvider),
-          // ),
+          // TODO: Add "Fitness Settings", 'AI Settings', and "Notifications"
+          _buildSectionHeader('Account'),
+          ListTile(
+            leading: const Icon(Icons.person_outline, color: Colors.white70),
+            title: const Text('Account Settings', style: TextStyle(color: Colors.white)),
+            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+            onTap: () {},
+          ),
           _buildSectionHeader('Information'),
           // TODO: Add "About Us" and "Privacy"
         ],
       ),
     );
   }
-
-  // String _themeModeToString(ThemeMode mode) {
-  //   switch (mode) {
-  //     case ThemeMode.light:
-  //       return 'Light';
-  //     case ThemeMode.dark:
-  //       return 'Dark';
-  //     case ThemeMode.system:
-  //       return 'System Default';
-  //   }
-  // }
-
-  // void _showThemeDialog(BuildContext context, ThemeProvider provider) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       title: const Text('Choose Theme'),
-  //       content: RadioGroup<ThemeMode>(
-  //         groupValue: provider.themeMode,
-  //         onChanged: (ThemeMode? value) {
-  //           _setThemeAndPop(context, provider, value);
-  //         },
-  //         child: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             RadioListTile<ThemeMode>(
-  //               title: const Text('Light'),
-  //               value: ThemeMode.light,
-  //             ),
-  //             RadioListTile<ThemeMode>(
-  //               title: const Text('Dark'),
-  //               value: ThemeMode.dark,
-  //             ),
-  //             RadioListTile<ThemeMode>(
-  //               title: const Text('System Default'),
-  //               value: ThemeMode.system,
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-//   void _setThemeAndPop(
-//     BuildContext context,
-//     ThemeProvider provider,
-//     ThemeMode? value,
-//   ) {
-//     if (value != null) provider.setThemeMode(value);
-//     Navigator.of(context).pop();
-//   }
 }
