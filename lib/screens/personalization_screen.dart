@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'home_screen.dart';
 import '../featureflags/feature_flags.dart';
 import '../authentication/authentication.dart';
-import 'package:flutter/foundation.dart';
 
 class PersonalizationScreen extends StatefulWidget {
   const PersonalizationScreen({super.key});
@@ -55,18 +54,15 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     'Planning',
   ];
 
+  // --- Hosted URL for Updating Users ---
   String get _baseUrl {
-    const String path = '/api/auth/me';
-    if (kIsWeb) {
-      // For web browsers
-      return 'http://127.0.0.1:5000$path';
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      // For Android emulators
-      return 'http://10.0.2.2:5000$path';
-    }
-    // For iOS simulators and other platforms
-    return 'http://localhost:5000$path';
+    return 'https://journey-backend-zqz7.onrender.com/api/auth/me';
   }
+
+  // // --- Local URL for Updating Users ---
+  // String get _baseUrl {
+  //   return 'http://127.0.0.1:5000/api/auth/me';
+  // }
 
   // dispose info after done.
   @override
