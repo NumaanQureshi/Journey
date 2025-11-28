@@ -1,79 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+// import 'settings/account_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  void _notImplemented(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature is not implemented yet')),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.blue),
-        title: Text(
-          'Settings',
-          style: GoogleFonts.lexend(
-            color: const Color(0xFFFBBF18),
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.black,
-      ),
-      body: Container(
-        color: const Color.fromARGB(255, 26, 26, 26),
-        child: ListView(
-          children: [
-            _buildSectionHeader('General'),
-            _buildSettingsTile(
-              context,
-              icon: Icons.account_circle,
-              title: 'Account Management',
-              onTap: () => _notImplemented(context, 'Account Management'),
-            ),
-            _buildSettingsTile(
-              context,
-              icon: Icons.notifications,
-              title: 'Notifications',
-              onTap: () => _notImplemented(context, 'Notifications'),
-            ),
-            const Divider(color: Colors.white24, indent: 16, endIndent: 16),
-            _buildSectionHeader('App Settings'),
-            _buildSettingsTile(
-              context,
-              icon: Icons.fitness_center,
-              title: 'Fitness Settings',
-              onTap: () => _notImplemented(context, 'Fitness Settings'),
-            ),
-            _buildSettingsTile(
-              context,
-              icon: Icons.smart_toy,
-              title: 'AI Settings',
-              onTap: () => _notImplemented(context, 'AI Settings'),
-            ),
-            _buildSettingsTile(
-              context,
-              icon: Icons.privacy_tip,
-              title: 'Privacy',
-              onTap: () => _notImplemented(context, 'Privacy'),
-            ),
-            const Divider(color: Colors.white24, indent: 16, endIndent: 16),
-            _buildSectionHeader('Information'),
-            _buildSettingsTile(
-              context,
-              icon: Icons.info,
-              title: 'About Us',
-              onTap: () => _notImplemented(context, 'About Us'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildSectionHeader(String title) {
     return Padding(
@@ -85,12 +15,49 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsTile(BuildContext context, {required IconData icon, required String title, required VoidCallback onTap}) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.white70),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-      onTap: onTap,
+  // Route _createSlideRoute(Widget page) {
+  //   return PageRouteBuilder(
+  //     pageBuilder: (context, animation, secondaryAnimation) => page,
+  //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+  //       const begin = Offset(1.0, 0.0);
+  //       const end = Offset.zero;
+  //       final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.ease));
+  //       return SlideTransition(
+  //         position: animation.drive(tween),
+  //         child: child,
+  //       );
+  //     },
+  //   );
+  // }
+  
+  @override
+  Widget build(BuildContext context) {
+    // final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF1A1A1A),
+      appBar: AppBar(
+        title: const Text('Settings'),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF1A1A1A),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.blue),
+      ),
+      body: ListView(
+        children: [
+          _buildSectionHeader('General'),
+          // TODO: Add "Fitness Settings", 'AI Settings', and "Notifications"
+          _buildSectionHeader('Account'),
+          ListTile(
+            leading: const Icon(Icons.person_outline, color: Colors.white70),
+            title: const Text('Account Settings', style: TextStyle(color: Colors.white)),
+            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+            onTap: () {},
+          ),
+          _buildSectionHeader('Information'),
+          // TODO: Add "About Us" and "Privacy"
+        ],
+      ),
     );
   }
 }

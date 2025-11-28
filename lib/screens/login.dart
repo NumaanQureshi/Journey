@@ -164,11 +164,18 @@ class _LoginState extends State<Login> {
                             return 'Please enter your password';
                           }
                           // password validator
-                          if (v.length < 6) {
-                            return 'Password must be at least 6 characters';
+                          if (v.length < 8) {
+                            return 'Password must be at least 8 characters';
                           }
                           return null;
                         },
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {},
+                          child: const Text('Forgot Password?'),
+                        ),
                       ),
                     ],
                   ),
