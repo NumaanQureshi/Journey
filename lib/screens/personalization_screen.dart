@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'home_screen.dart';
 import '../featureflags/feature_flags.dart';
 import '../authentication/authentication.dart';
+import '../authentication/api_service.dart';
 
 class PersonalizationScreen extends StatefulWidget {
   const PersonalizationScreen({super.key});
@@ -54,16 +55,6 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     'Planning',
   ];
 
-  // --- Hosted URL for Updating Users ---
-  String get _baseUrl {
-    return 'https://journey-backend-zqz7.onrender.com/api/auth/me';
-  }
-
-  // // --- Local URL for Updating Users ---
-  // String get _baseUrl {
-  //   return 'http://127.0.0.1:5000/api/auth/me';
-  // }
-
   // dispose info after done.
   @override
   void dispose() {
@@ -93,7 +84,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     );
 
     // 1. Construct the request
-    final request = http.MultipartRequest('PUT', Uri.parse(_baseUrl));
+    final request = http.MultipartRequest('PUT', Uri.parse(ApiService.me()));
 
     // 2. Add headers (including authentication)
     String? token;
