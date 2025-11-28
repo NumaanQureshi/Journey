@@ -1,77 +1,91 @@
-CREATE TABLE public.profiles (
-  user_id integer NOT NULL,
-  name character varying,
-  age integer,
-  gender character varying,
-  height_in numeric,
-  weight_lb numeric,
-  main_focus character varying,
-  goal_weight_lb numeric,
-  activity_intensity character varying,
-  CONSTRAINT profiles_pkey PRIMARY KEY (user_id),
-  CONSTRAINT profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE
-);
-CREATE TABLE public.users (
-  id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass),
-  email character varying NOT NULL UNIQUE,
-  password_hash character varying NOT NULL,
-  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-  updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT users_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.friends (
-    user_id_1 integer NOT NULL,
-    user_id_2 integer NOT NULL,
-    CONSTRAINT user_friends_pk PRIMARY KEY (user_id_1, user_id_2),
-    CONSTRAINT fk_user_1 FOREIGN KEY (user_id_1) REFERENCES public.users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_user_2 FOREIGN KEY (user_id_2) REFERENCES public.users(id) ON DELETE CASCADE,
-    CONSTRAINT check_ids_order CHECK (user_id_1 < user_id_2)
-);
-CREATE TABLE public.friend_requests (
-    sender_id integer NOT NULL,
-    receiver_id integer NOT NULL,
-    status character varying DEFAULT 'pending' NOT NULL, -- 'pending', 'accepted', 'rejected'
-    sent_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT friend_requests_pk PRIMARY KEY (sender_id, receiver_id),
-    CONSTRAINT fk_sender FOREIGN KEY (sender_id) REFERENCES public.users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_receiver FOREIGN KEY (receiver_id) REFERENCES public.users(id) ON DELETE CASCADE
-);
-CREATE TABLE public.exercises (
-    id integer NOT NULL PRIMARY KEY,
-    name character varying NOT NULL UNIQUE,
-    description text,
-    category character varying
-);
-CREATE TABLE public.plans (
-    id integer NOT NULL PRIMARY KEY,
-    user_id integer,
-    name character varying NOT NULL,
-    is_public boolean DEFAULT FALSE,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_plan_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL
-);
-CREATE TABLE public.workouts (
-    id integer NOT NULL PRIMARY KEY,
-    user_id integer NOT NULL,
-    plan_id integer, -- plan link
-    start_time timestamp without time zone NOT NULL,
-    end_time timestamp without time zone,
-    duration_min numeric,
-    calories_burned integer,
-    total_points_earned integer DEFAULT 0,
-    CONSTRAINT fk_workout_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_workout_plan FOREIGN KEY (plan_id) REFERENCES public.plans(id) ON DELETE SET NULL
-);
-CREATE TABLE public.leaderboard (
-  user_id integer NOT NULL,
-  total_points integer DEFAULT 0,
-  workouts_completed integer DEFAULT 0,
-  challenges_completed integer DEFAULT 0,
-  current_streak_days integer DEFAULT 0,
-  longest_streak_days integer DEFAULT 0,
-  total_calories_burned integer DEFAULT 0,
-  rank integer,
-  last_updated timestamp without time zone DEFAULT now(),
-  CONSTRAINT leaderboard_pkey PRIMARY KEY (user_id),
-  CONSTRAINT leaderboard_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE
-);
+create table public.users (
+  id serial not null,
+  email character varying(100) not null,
+  password_hash character varying(255) not null,
+  username character varying(50) NOT NULL,
+  created_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  constraint users_pkey primary key (id),
+  constraint users_email_key unique (email),
+  constraint users_username_key unique (username)
+) TABLESPACE pg_default;
+
+create table public.profiles (
+  user_id integer not null,
+  name character varying(255) null,
+  age integer null,
+  gender character varying(50) null,
+  height_in numeric null,
+  weight_lb numeric null,
+  main_focus character varying(50) null,
+  goal_weight_lb numeric null,
+  activity_intensity character varying(50) null,
+  constraint profiles_pkey primary key (user_id),
+  constraint profiles_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.friends (
+  user_id_1 integer not null,
+  user_id_2 integer not null,
+  constraint user_friends_pk primary key (user_id_1, user_id_2),
+  constraint fk_user_1 foreign KEY (user_id_1) references users (id) on delete CASCADE,
+  constraint fk_user_2 foreign KEY (user_id_2) references users (id) on delete CASCADE,
+  constraint check_ids_order check ((user_id_1 < user_id_2))
+) TABLESPACE pg_default;
+
+create table public.friend_requests (
+  sender_id integer not null,
+  receiver_id integer not null,
+  status character varying not null default 'pending'::character varying,
+  sent_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  constraint friend_requests_pk primary key (sender_id, receiver_id),
+  constraint fk_receiver foreign KEY (receiver_id) references users (id) on delete CASCADE,
+  constraint fk_sender foreign KEY (sender_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.exercises (
+  id integer not null,
+  name character varying not null,
+  description text null,
+  category character varying null,
+  constraint exercises_pkey primary key (id),
+  constraint exercises_name_key unique (name)
+) TABLESPACE pg_default;
+
+create table public.plans (
+  id integer not null,
+  user_id integer null,
+  name character varying not null,
+  is_public boolean null default false,
+  created_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  constraint plans_pkey primary key (id),
+  constraint fk_plan_user foreign KEY (user_id) references users (id) on delete set null
+) TABLESPACE pg_default;
+
+create table public.workouts (
+  id integer not null,
+  user_id integer not null,
+  plan_id integer null,
+  start_time timestamp without time zone not null,
+  end_time timestamp without time zone null,
+  duration_min numeric null,
+  calories_burned integer null,
+  total_points_earned integer null default 0,
+  constraint workouts_pkey primary key (id),
+  constraint fk_workout_plan foreign KEY (plan_id) references plans (id) on delete set null,
+  constraint fk_workout_user foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.leaderboard (
+  user_id integer not null,
+  total_points integer null default 0,
+  workouts_completed integer null default 0,
+  challenges_completed integer null default 0,
+  current_streak_days integer null default 0,
+  longest_streak_days integer null default 0,
+  total_calories_burned integer null default 0,
+  rank integer null,
+  last_updated timestamp without time zone null default now(),
+  constraint leaderboard_pkey primary key (user_id),
+  constraint leaderboard_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
