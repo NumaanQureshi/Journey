@@ -8,8 +8,9 @@ import bcrypt
 import jwt                      # Encode / Decode
 import datetime
 from functools import wraps
-from helper_functions import calculate_age
+from helper_functions import calculate_age, generate_reset_token
 from sql_loader import load_sql_query
+from email_service import send_email
 
 
 load_dotenv()
@@ -19,6 +20,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}}) # -- USED ONLY FOR LOCAL TEST
 
 DATABASE_URL= os.getenv("DATABASE_URL")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+RESET_PASSWORD_URL = os.getenv("RESET_PASSWORD_URL")
 app.config['SKIP_AUTH_DEBUG'] = os.getenv('SKIP_AUTH_DEBUG', 'False').lower() in ('true', '1', 't')
 app.config['DEBUG_USER_ID'] = os.getenv('DEBUG_USER_ID', None)
 
@@ -130,6 +132,8 @@ def register():
         if not user_login_info.get('password'):
             return jsonify({'success': False, 'error': 'Password is required'}), 400
         password = user_login_info['password']
+        if not user_login_info.get('username'):
+            return jsonify({'success': False, 'error': 'Username is required'}), 400
         if len(password) < 8: #For security purposes, we want a secure password that's at least 8 characters long
             return jsonify({
                 'success': False,
@@ -141,8 +145,9 @@ def register():
         insert_user_sql = load_sql_query('insert_user_core.sql')
         cur.execute(insert_user_sql,
             (
-                user_login_info['email'],
+                user_login_info['email'].lower(),
                 password_hash,
+                user_login_info['username']
             )
         )
         user_id = cur.fetchone()[0]
@@ -179,6 +184,7 @@ def register():
             'user': {
                 'id': user_id,
                 'email': user_login_info['email'],
+                'username': user_login_info['username'],
                 'age': user_login_info.get('age'),
                 'gender': user_login_info.get('gender'),
                 'height_in': user_login_info.get('height_in'),
@@ -194,6 +200,11 @@ def register():
             return jsonify({
                 'success': False,
                 'error': 'Email already exists'
+            }), 400
+        if 'username' in error_msg:
+            return jsonify({
+                'success': False,
+                'error': 'Username already exists'
             }), 400
         return jsonify({
             'success': False,
@@ -361,90 +372,211 @@ def update_user(user_id):
             conn.close()
 
 
-@app.route('/api/auth/me/password', methods=['PUT'])
-@token_required
-def update_password(user_id):
+# @app.route('/api/auth/me/password', methods=['PUT'])
+# @token_required
+# def update_password(user_id):
+#     conn = None
+#     cur = None
+
+#     try:
+#         data = request.get_json()
+#         old_password = data.get('old_password')
+#         new_password = data.get('new_password')
+
+#         if not old_password:
+#             return jsonify({
+#                 'success': False,
+#                 'error': 'Current password is required'
+#             }), 400
+#         if not new_password:
+#             return jsonify({
+#                 'success': False,
+#                 'error': 'New password is required'
+#             }), 400
+#         if len(new_password) < 6:
+#             return jsonify({
+#                 'success': False,
+#                 'error': 'New password must be at least 6 characters long'
+#             }), 400
+#         if old_password == new_password:
+#             return jsonify({
+#                 'success': False,
+#                 'error': 'New password must be different from current password'
+#             }), 400
+
+#         conn = get_db_connection()
+#         cur = conn.cursor()
+
+#         cur.execute(
+#             'SELECT password_hash FROM users WHERE id = %s;',
+#             (user_id,)
+#         )
+#         user = cur.fetchone()
+
+#         if not user:
+#             return jsonify({
+#                 'success': False,
+#                 'error': 'User not found'
+#             }), 404
+
+#         if not bcrypt.checkpw(old_password.encode('utf-8'), user[0].encode('utf-8')):
+#             return jsonify({
+#                 'success': False,
+#                 'error': 'Current password is incorrect'
+#             }), 401
+
+#         new_password_hash = bcrypt.hashpw(
+#             new_password.encode('utf-8'),
+#             bcrypt.gensalt()
+#         ).decode('utf-8')
+
+#         cur.execute(
+#             '''UPDATE users 
+#                SET password_hash = %s, updated_at = NOW() 
+#                WHERE id = %s;''',
+#             (new_password_hash, user_id)
+#         )
+#         conn.commit()
+
+#         return jsonify({
+#             'success': True,
+#             'message': 'Password updated successfully'
+#         }), 200
+
+#     except Exception as e:
+#         if conn:
+#             conn.rollback()
+#         return jsonify({
+#             'success': False,
+#             'error': str(e)
+#         }), 500
+
+#     finally:
+#         if cur:
+#             cur.close()
+#         if conn:
+#             conn.close()
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password():
     conn = None
     cur = None
-
     try:
         data = request.get_json()
-        old_password = data.get('old_password')
-        new_password = data.get('new_password')
+        email = data.get('email')
 
-        if not old_password:
-            return jsonify({
-                'success': False,
-                'error': 'Current password is required'
-            }), 400
-        if not new_password:
-            return jsonify({
-                'success': False,
-                'error': 'New password is required'
-            }), 400
-        if len(new_password) < 6:
-            return jsonify({
-                'success': False,
-                'error': 'New password must be at least 6 characters long'
-            }), 400
-        if old_password == new_password:
-            return jsonify({
-                'success': False,
-                'error': 'New password must be different from current password'
-            }), 400
+        if not email:
+            return jsonify({'success': False, 'error': 'Email is required'}), 400
 
         conn = get_db_connection()
         cur = conn.cursor()
 
-        cur.execute(
-            'SELECT password_hash FROM users WHERE id = %s;',
-            (user_id,)
-        )
+        # find user's email
+        sql_query = load_sql_query('select_user_by_email.sql')
+        cur.execute(sql_query, (email,))
         user = cur.fetchone()
 
         if not user:
+            # obfuscation message
             return jsonify({
-                'success': False,
-                'error': 'User not found'
-            }), 404
+                'success': True,
+                'message': 'If an account is associated with this email, a reset link has been sent.'
+            }), 200
 
-        if not bcrypt.checkpw(old_password.encode('utf-8'), user[0].encode('utf-8')):
-            return jsonify({
-                'success': False,
-                'error': 'Current password is incorrect'
-            }), 401
+        user_id = user[0]
+        reset_token = generate_reset_token(user_id)
 
+        # 2. Construct the reset link (using the new env var)
+        reset_link = f"{RESET_PASSWORD_URL}?token={reset_token}"
+        
+        # 3. Define the email content
+        subject = "Password Reset Request"
+        body = f"You requested a password reset. Click the link to reset your password (expires in 1 hour): {reset_link}"
+
+        # 4. Send the email
+        success = send_email(email, subject, body)
+
+        if not success:
+             # Log the error but still tell the user to check their email
+             print(f"Error sending email to {email}")
+
+        return jsonify({
+            'success': True,
+            'message': 'If an account is associated with this email, a reset link has been sent.'
+        }), 200
+
+    except Exception as e:
+        if conn: conn.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Request failed: {str(e)}'}), 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    conn = None
+    cur = None
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        new_password = data.get('new_password')
+
+        if not token:
+            return jsonify({'success': False, 'error': 'Reset token is missing'}), 400
+        if not new_password or len(new_password) < 8:
+            return jsonify({'success': False, 'error': 'New password must be at least 8 characters long'}), 400
+
+        # 1. Decode and validate the JWT token
+        try:
+            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
+            if payload.get('token_type') != 'password_reset':
+                raise jwt.InvalidTokenError
+            user_id = payload['user_id']
+        except jwt.ExpiredSignatureError:
+            return jsonify({'success': False, 'error': 'Reset link has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'success': False, 'error': 'Invalid reset token'}), 401
+
+        # 2. Hash the new password
         new_password_hash = bcrypt.hashpw(
             new_password.encode('utf-8'),
             bcrypt.gensalt()
         ).decode('utf-8')
 
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # 3. Update the user's password
         cur.execute(
-            '''UPDATE users 
-               SET password_hash = %s, updated_at = NOW() 
-               WHERE id = %s;''',
+            '''
+            UPDATE users 
+            SET password_hash = %s, updated_at = NOW() 
+            WHERE id = %s;
+            ''',
             (new_password_hash, user_id)
         )
+        
+        # Check if a row was updated
+        if cur.rowcount == 0:
+            return jsonify({'success': False, 'error': 'User not found or password already reset'}), 404
+
         conn.commit()
 
         return jsonify({
             'success': True,
-            'message': 'Password updated successfully'
+            'message': 'Password reset successfully. You can now log in with your new password.'
         }), 200
 
     except Exception as e:
-        if conn:
-            conn.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
+        if conn: conn.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Password reset failed: {str(e)}'}), 500
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        if cur: cur.close()
+        if conn: conn.close()
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -505,11 +637,7 @@ def login():
         user_data = {
             'id': user[0],
             'email': user[1],
-            'age': user[4],
-            'gender': user[5],
-            'height_in': user[6],
-            'weight_lb': user[7],
-            'created_at': str(user[3])
+            'username': user[3],
         }
 
         return jsonify({
@@ -534,6 +662,7 @@ def login():
             cur.close()
         if conn:
             conn.close()
+
 # DELETE user
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
