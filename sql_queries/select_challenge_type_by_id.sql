@@ -1,0 +1,1 @@
+SELECT challenge_type FROM public.challenges WHERE id = %s;
