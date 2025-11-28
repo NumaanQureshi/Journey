@@ -1,27 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-// import 'package:flutter/foundation.dart'; // comment out for publication builds
+import 'api_service.dart';
 
 class AuthService {
-  // --- Hosted Backend URL specifically for Auth Functions ---
-  String get _baseUrl {
-    return 'https://journey-backend-zqz7.onrender.com/api/auth';
-  }
-
-  // // --- Local Backend URL specifically for Auth Functions ---
-  // String get _baseUrl {
-  //   if (kIsWeb) {
-  //     // chrome
-  //     return 'http://127.0.0.1:5000/api/auth';
-  //   } 
-  //   else if (defaultTargetPlatform == TargetPlatform.android) {
-  //     // android
-  //     return 'http://10.0.2.2:5000/api/auth';
-  //   }
-  //   // iOS + all other platforms
-  //   return 'http://localhost:5000/api/auth';
-  // }
   final _storage = const FlutterSecureStorage();
 
   // --- Persistent Auth Token ---
@@ -33,7 +15,7 @@ class AuthService {
   Future<bool> signUp(String email, String password, String username) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/register'),
+        Uri.parse('${ApiService.auth()}/register'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -66,7 +48,7 @@ class AuthService {
   Future<bool> login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/login'),
+        Uri.parse('${ApiService.auth()}/login'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -97,7 +79,7 @@ class AuthService {
   Future<bool> forgotPassword(String email) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/forgot-password'), // endpoint for forgot_password
+        Uri.parse('${ApiService.auth()}/forgot-password'), // endpoint for forgot_password
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -120,7 +102,7 @@ class AuthService {
   Future<bool> resetPassword(String token, String newPassword) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/reset-password'), // endpoint for reset_password
+        Uri.parse('${ApiService.auth()}/reset-password'), // endpoint for reset_password
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
