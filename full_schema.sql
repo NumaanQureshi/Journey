@@ -76,6 +76,20 @@ create table public.workouts (
   constraint fk_workout_user foreign KEY (user_id) references users (id) on delete CASCADE
 ) TABLESPACE pg_default;
 
+create table public.challenges (
+  id serial not null,
+  user_id integer not null,
+  challenge_title character varying(255) not null default ''::character varying,
+  challenge_type character varying(50) not null default ''::character varying,
+  goal numeric not null default 0,
+  current_progress numeric not null default 0,
+  is_completed boolean not null default false,
+  assigned_at timestamp without time zone not null default CURRENT_TIMESTAMP,
+  last_updated timestamp without time zone null default CURRENT_TIMESTAMP,
+  constraint challenges_pkey primary key (id),
+  constraint fk_challenge_user foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
 create table public.leaderboard (
   user_id integer not null,
   total_points integer null default 0,
