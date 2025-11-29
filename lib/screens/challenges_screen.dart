@@ -40,8 +40,6 @@ class Challenge {
 }
 
 // Challenge Lists
-// (Daily, Weekly, All-Time)
-
 final List<Challenge> allDailyChallenges = [
   Challenge(type: 'Daily', title: 'Push-Up Power', description: 'Complete 30 push-ups.', goal: 30, icon: Icons.fitness_center, color: const Color(0xFFBF6A02)),
   Challenge(type: 'Daily', title: 'Cardio Blitz', description: 'Spend 20 minutes on cardio.', goal: 20, icon: Icons.directions_run, color: const Color(0xFF1E88E5)),
@@ -86,12 +84,13 @@ final List<Challenge> allTimeChallenges = [
   Challenge(type: 'All-Time', title: 'Journey Master', description: 'Complete all achievements.', goal: 4, icon: Icons.emoji_events, color: const Color(0xFFFFD700)),
 ];
 
-
 // Challenge Manager
-
 class ChallengeManager {
   static List<Challenge> dailyChallenges = [];
   static List<Challenge> weeklyChallenges = [];
+
+  static DateTime _nextDailyReset = getNextDailyReset();
+  static DateTime _nextWeeklyReset = getNextWeeklyReset();
 
   static Challenge _copy(Challenge c) {
     return Challenge(
@@ -111,14 +110,22 @@ class ChallengeManager {
     return List.generate(count, (i) => _copy(source[i]));
   }
 
-  // Daily reset at midnight
-  static void resetDaily() {
-    dailyChallenges = _cycle(allDailyChallenges, 5);
+  static void maybeResetDaily() {
+    if (DateTime.now().isAfter(_nextDailyReset)) {
+      dailyChallenges = _cycle(allDailyChallenges, 5);
+      _nextDailyReset = getNextDailyReset();
+    } else if (dailyChallenges.isEmpty) {
+      dailyChallenges = _cycle(allDailyChallenges, 5);
+    }
   }
 
-  // Weekly reset at Sunday midnight
-  static void resetWeekly() {
-    weeklyChallenges = _cycle(allWeeklyChallenges, 3);
+  static void maybeResetWeekly() {
+    if (DateTime.now().isAfter(_nextWeeklyReset)) {
+      weeklyChallenges = _cycle(allWeeklyChallenges, 3);
+      _nextWeeklyReset = getNextWeeklyReset();
+    } else if (weeklyChallenges.isEmpty) {
+      weeklyChallenges = _cycle(allWeeklyChallenges, 3);
+    }
   }
 
   static DateTime getNextDailyReset() {
@@ -138,10 +145,8 @@ class ChallengeManager {
     final count = allTimeChallenges.where((x) => x.title != "Journey Master" && x.completed).length;
     jm.progress = count.toDouble();
     jm.completed = jm.progress >= jm.goal;
-    // TODO: Send backend event to update Journey Master automatically
   }
 }
-
 
 // Countdown Timer
 class CountdownTimer extends StatefulWidget {
@@ -204,8 +209,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
   }
 }
 
-// Challenge Card (Compact)
-
+// Challenge Card
 class ChallengeCard extends StatelessWidget {
   final Challenge challenge;
   final VoidCallback? onTap;
@@ -219,7 +223,7 @@ class ChallengeCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: 140, // compact width
+        width: 140,
         child: Card(
           color: cardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -232,17 +236,14 @@ class ChallengeCard extends StatelessWidget {
                   children: [
                     Icon(challenge.icon, color: Colors.white, size: 28),
                     if (challenge.completed)
-                      const Icon(Icons.check_circle,
-                          color: Colors.greenAccent, size: 18),
+                      const Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(challenge.title,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.mavenPro(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold)),
+                        color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
                 Text(challenge.description,
                     textAlign: TextAlign.center,
@@ -268,7 +269,6 @@ class ChallengeCard extends StatelessWidget {
 }
 
 // Main Challenges Page
-
 class Challenges extends StatefulWidget {
   const Challenges({super.key});
 
@@ -283,10 +283,10 @@ class _ChallengesState extends State<Challenges> {
   @override
   void initState() {
     super.initState();
-    ChallengeManager.resetDaily();
-    ChallengeManager.resetWeekly();
-    dailyReset = ChallengeManager.getNextDailyReset();
-    weeklyReset = ChallengeManager.getNextWeeklyReset();
+    ChallengeManager.maybeResetDaily();
+    ChallengeManager.maybeResetWeekly();
+    dailyReset = ChallengeManager._nextDailyReset;
+    weeklyReset = ChallengeManager._nextWeeklyReset;
   }
 
   int _completedCount(List<Challenge> list) =>
@@ -319,8 +319,9 @@ class _ChallengesState extends State<Challenges> {
                     challenge: c,
                     onTap: () {
                       if (c.title != "Journey Master") {
-                        c.updateProgress(1); // increment 1 per tap
-                        ChallengeManager.updateJourneyMaster(); // auto-update JM
+                        // TODO: Remove manual increment; progress should be auto-collected
+                        c.updateProgress(1);
+                        ChallengeManager.updateJourneyMaster();
                         setState(() {});
                       }
                     },
@@ -356,7 +357,7 @@ class _ChallengesState extends State<Challenges> {
                 getTarget: () => ChallengeManager.getNextDailyReset(),
                 label: "Resets in",
                 onExpire: () {
-                  ChallengeManager.resetDaily();
+                  ChallengeManager.maybeResetDaily();
                   setState(() {});
                 },
               ),
@@ -369,7 +370,7 @@ class _ChallengesState extends State<Challenges> {
                 getTarget: () => ChallengeManager.getNextWeeklyReset(),
                 label: "Resets in",
                 onExpire: () {
-                  ChallengeManager.resetWeekly();
+                  ChallengeManager.maybeResetWeekly();
                   setState(() {});
                 },
               ),
@@ -383,3 +384,5 @@ class _ChallengesState extends State<Challenges> {
     );
   }
 }
+
+

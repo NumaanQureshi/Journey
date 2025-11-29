@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'home_screen.dart';
 import '../featureflags/feature_flags.dart';
 import '../authentication/authentication.dart';
-import 'package:flutter/foundation.dart';
+import '../authentication/api_service.dart';
 
 class PersonalizationScreen extends StatefulWidget {
   const PersonalizationScreen({super.key});
@@ -55,19 +55,6 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     'Planning',
   ];
 
-  String get _baseUrl {
-    const String path = '/api/auth/me';
-    if (kIsWeb) {
-      // For web browsers
-      return 'http://127.0.0.1:5000$path';
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      // For Android emulators
-      return 'http://10.0.2.2:5000$path';
-    }
-    // For iOS simulators and other platforms
-    return 'http://localhost:5000$path';
-  }
-
   // dispose info after done.
   @override
   void dispose() {
@@ -97,7 +84,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     );
 
     // 1. Construct the request
-    final request = http.MultipartRequest('PUT', Uri.parse(_baseUrl));
+    final request = http.MultipartRequest('PUT', Uri.parse(ApiService.me()));
 
     // 2. Add headers (including authentication)
     String? token;
