@@ -1,0 +1,1 @@
+SELECT 1 FROM public.challenges WHERE user_id = %s AND challenge_type = 'All-Time' LIMIT 1;
