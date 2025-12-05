@@ -33,9 +33,9 @@ def get_all_users():
 def get_user(user_id):
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         sql_query = load_sql_query('select_user_by_id.sql')
-        cur.execute(sql_query, (user_id,))        
+        cur.execute(sql_query, (user_id,))
         user = cur.fetchone()
         cur.close()
         conn.close()
@@ -46,6 +46,24 @@ def get_user(user_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+# GET current user
+@users_bp.route('/me', methods=['GET'])
+@token_required
+def get_current_user(user_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        sql_query = load_sql_query('select_user_by_id.sql')
+        cur.execute(sql_query, (user_id,))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+        if user:
+            return jsonify({"success": True, "user": user})
+        else:
+            return jsonify({"success": False, "error": "User not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 # DELETE user
 @users_bp.route('/<int:user_id>', methods=['DELETE'])
