@@ -6,7 +6,7 @@ SELECT u.id,
     p.age,
     p.gender,
     p.height_in,
-    p.weight_lb,
+    p.weight_lb
 FROM users u
     INNER JOIN profiles p ON u.id = p.user_id
 WHERE u.id = %s
