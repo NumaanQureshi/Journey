@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class JourneyAiScreen extends StatefulWidget {
-  const JourneyAiScreen({super.key});
+class JourneyAi extends StatefulWidget {
+  const JourneyAi({super.key});
 
   @override
-  State<JourneyAiScreen> createState() => _JourneyAiScreenState();
+  State<JourneyAi> createState() => _JourneyAiState();
 }
 
-class _JourneyAiScreenState extends State<JourneyAiScreen> {
+class _JourneyAiState extends State<JourneyAi> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
