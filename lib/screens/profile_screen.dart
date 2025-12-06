@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'friend_screen.dart';
 import 'login_screen.dart';
+import 'personalization_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class Profile extends StatelessWidget {
@@ -18,60 +19,71 @@ class Profile extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF1A1A1A),
       ),
-      body: Stack(
-        children: [
-          SizedBox.expand(
-            child: Image.asset(
-              'assets/images/profile_bg.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircleAvatar(
-                    radius: 48,
-                    backgroundColor: Color(0xFF667DB5),
-                    child: Icon(Icons.person, size: 48, color: Colors.white),
+      backgroundColor: const Color(0xFF1A1A1A),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircleAvatar(
+                radius: 48,
+                backgroundColor: Colors.blue,
+                child: Icon(Icons.person, size: 48, color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Your Name',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: 200,
+                height: 60,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.palette),
+                  label: const Text('Personalize', style: TextStyle(fontSize: 18)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2C2C2C),
+                    foregroundColor: Colors.white,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Your Name',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PersonalizationScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: 200,
+                height: 60,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.group),
+                  label: const Text('Friends', style: TextStyle(fontSize: 18)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2C2C2C),
+                    foregroundColor: Colors.white,
                   ),
-                  const SizedBox(height: 24),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: 200,
-                    height: 60,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.group),
-                      label: const Text('Friends', style: TextStyle(fontSize: 18)),
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF667DB5),
-                          foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const Friend()),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: 200,
-                    height: 60,
-                    child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const Friend()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: 200,
+                height: 60,
+                child: ElevatedButton.icon(
                       icon: const Icon(Icons.logout),
                       label: const Text('Log Out', style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
@@ -85,13 +97,11 @@ class Profile extends StatelessWidget {
                           (Route<dynamic> route) => false,
                         );
                       },
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
