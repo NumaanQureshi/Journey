@@ -1,6 +1,7 @@
 SELECT u.id,
     u.email,
     u.password_hash,
+    u.username,
     u.created_at,
     p.age,
     p.gender,
