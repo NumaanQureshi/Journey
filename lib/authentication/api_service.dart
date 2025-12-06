@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class ApiService {
   static String getBaseUrl() {
     return 'https://journey-backend-zqz7.onrender.com/api';
