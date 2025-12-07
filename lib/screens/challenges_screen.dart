@@ -672,7 +672,7 @@ class _ChallengesState extends State<Challenges> {
 
     if (response.statusCode != 200) {
       // Handle error, e.g., show a snackbar
-      print("Failed to fetch challenges: ${response.body}");
+      // debugPrint("Failed to fetch challenges: ${response.body}");
       return;
     }
 
