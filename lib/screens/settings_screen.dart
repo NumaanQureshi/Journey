@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:journey_application/screens/settings/information_settings.dart';
 // import 'settings/account_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -10,30 +11,17 @@ class SettingsScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16.0, 20.0, 16.0, 8.0),
       child: Text(
         title,
-        style: GoogleFonts.raleway(color: Colors.amber, fontSize: 14, fontWeight: FontWeight.bold),
+        style: GoogleFonts.raleway(
+          color: Colors.amber,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
-  // Route _createSlideRoute(Widget page) {
-  //   return PageRouteBuilder(
-  //     pageBuilder: (context, animation, secondaryAnimation) => page,
-  //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-  //       const begin = Offset(1.0, 0.0);
-  //       const end = Offset.zero;
-  //       final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.ease));
-  //       return SlideTransition(
-  //         position: animation.drive(tween),
-  //         child: child,
-  //       );
-  //     },
-  //   );
-  // }
-  
   @override
   Widget build(BuildContext context) {
-    // final themeProvider = Provider.of<ThemeProvider>(context);
-
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
@@ -47,6 +35,7 @@ class SettingsScreen extends StatelessWidget {
         children: [
           _buildSectionHeader('General'),
           // TODO: Add "Fitness Settings", 'AI Settings', and "Notifications"
+
           _buildSectionHeader('Account'),
           ListTile(
             leading: const Icon(Icons.person_outline, color: Colors.white70),
@@ -54,8 +43,20 @@ class SettingsScreen extends StatelessWidget {
             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
             onTap: () {},
           ),
+
+          // ---------------------- UPDATED INFORMATION SECTION ----------------------
           _buildSectionHeader('Information'),
-          // TODO: Add "About Us" and "Privacy"
+          ListTile(
+            leading: const Icon(Icons.info_outline, color: Colors.white70),
+            title: const Text('Information', style: TextStyle(color: Colors.white)),
+            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const InformationSettingsPage()),
+              );
+            },
+          ),
         ],
       ),
     );
