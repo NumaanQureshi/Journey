@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:journey_application/screens/challenges_screen.dart';
 import 'package:journey_application/screens/home_screen.dart';
 import 'package:journey_application/screens/workout_screen.dart';
 import 'package:journey_application/screens/settings_screen.dart';
+import 'package:journey_application/screens/user_analytics_screen.dart';
+import 'package:journey_application/providers/user_provider.dart';
 
 class SideMenu extends StatelessWidget {
   final String? currentScreen;
@@ -29,9 +32,9 @@ class SideMenu extends StatelessWidget {
                 DrawerHeader(
                   child: Center(
                     child: Column(
-                      children: const [
-                        SizedBox(height: 12),
-                        CircleAvatar(
+                      children: [
+                        const SizedBox(height: 12),
+                        const CircleAvatar(
                           radius: 28,
                           backgroundColor: Color(0xFF667DB5),
                           child: Icon(
@@ -40,14 +43,28 @@ class SideMenu extends StatelessWidget {
                             color: Colors.white
                           ),
                         ),
-                        SizedBox(height: 16),
-                        Text('Your Name', style: TextStyle(color: Colors.white, fontSize: 18)),
+                        const SizedBox(height: 16),
+                        Consumer<UserProvider>(
+                          builder: (context, userProvider, _) {
+                            final displayName = userProvider.displayName ?? 'User';
+                            return Text(
+                              displayName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
+                        ),
                       ],
                     ),
                   )
                 ),
                 ListTile(
-                  leading: const Icon(Icons.home, color: Colors.white),
+                  leading: const Icon(Icons.home, color: Colors.blue),
                   title: const Text(
                     'Home',
                     style: TextStyle(
@@ -64,21 +81,6 @@ class SideMenu extends StatelessWidget {
                           MaterialPageRoute(builder: (context) => const HomeScreen()));
                     }
                   },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.smart_toy,
-                    color: Colors.blue),
-                  title: const Text(
-                    'Journey AI',
-                    style: TextStyle(
-                      color: Colors.white,
-                    )
-                  ),
-                  tileColor: Colors.transparent,
-                  selectedTileColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  onTap: () => _notImplemented(context),
                 ),
                 ListTile(
                   leading: const Icon(Icons.fitness_center, color: Colors.red),
@@ -130,6 +132,25 @@ class SideMenu extends StatelessWidget {
                   selectedTileColor: Colors.transparent,
                   hoverColor: Colors.transparent,
                   onTap: () => _notImplemented(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.analytics, color: Colors.purpleAccent),
+                  title: const Text(
+                    'Analytics',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                  selected: currentScreen == 'Analytics',
+                  selectedTileColor: Colors.grey.withValues(alpha: 0.3),
+                  hoverColor: Colors.transparent,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (currentScreen != 'Analytics') {
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => const UserAnalyticsScreen()));
+                    }
+                  },
                 ),
                 const Spacer(),
                 Padding(
