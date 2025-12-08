@@ -4,11 +4,11 @@ from openai import OpenAI
 from typing import List, Dict, Any, Optional
 import requests
 from datetime import datetime
+import psycopg2
 
 
 class FitnessAIAgent:
     def __init__(self):
-        """Initialize the AI agent with fine-tuned model"""
         self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
         # Load fine-tuned model
@@ -24,7 +24,6 @@ class FitnessAIAgent:
         self.exercises = self._load_exercises()
 
     def _load_exercises(self):
-        """Load the exercises database"""
         try:
             response = requests.get(
                 "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",
@@ -38,53 +37,38 @@ class FitnessAIAgent:
             return []
 
     def _build_user_context(self, user_data: Dict[str, Any]) -> str:
-        """Build rich context about the user for the AI"""
         context_parts = []
 
-        # User profile
         if user_data.get('fitness_level'):
             context_parts.append(f"Fitness Level: {user_data['fitness_level']}")
         if user_data.get('age'):
             context_parts.append(f"Age: {user_data['age']}")
         if user_data.get('weight'):
             context_parts.append(f"Weight: {user_data['weight']} lbs")
-        if user_data.get('height'):
-            context_parts.append(f"Height: {user_data['height']}")
 
-        # Workout history
         if user_data.get('workout_history'):
             history = user_data['workout_history']
             context_parts.append(f"\nRecent Workout History ({len(history)} workouts):")
-            for workout in history[-5:]:  # Last 5 workouts
+            for workout in history[-5:]:
                 context_parts.append(
-                    f"- {workout.get('date')}: {workout.get('exercises_count')} exercises, "
-                    f"{workout.get('duration')}min, {workout.get('volume')}lbs total volume"
+                    f"- {workout.get('start_time')}: {workout.get('exercises_count', 0)} exercises, "
+                    f"{workout.get('duration_min', 0)}min"
                 )
 
-        # Current progress
         if user_data.get('strength_progress'):
             context_parts.append("\nStrength Progress:")
             for exercise, data in user_data['strength_progress'].items():
                 context_parts.append(
                     f"- {exercise}: {data.get('current_weight')}lbs x {data.get('current_reps')} reps "
-                    f"(+{data.get('progress_percent')}% from start)"
+                    f"(+{data.get('progress_percent')}%)"
                 )
 
-        # Goals and preferences
         if user_data.get('goals'):
             context_parts.append(f"\nGoals: {', '.join(user_data['goals'])}")
         if user_data.get('injuries'):
-            context_parts.append(f"\nInjuries/Limitations: {user_data['injuries']}")
+            context_parts.append(f"Injuries/Limitations: {user_data['injuries']}")
         if user_data.get('available_equipment'):
-            context_parts.append(f"\nAvailable Equipment: {', '.join(user_data['available_equipment'])}")
-        if user_data.get('workout_days'):
-            context_parts.append(f"\nPreferred Workout Days: {user_data['workout_days']} days/week")
-
-        # Recovery and fatigue
-        if user_data.get('fatigue_level'):
-            context_parts.append(f"\nCurrent Fatigue Level: {user_data['fatigue_level']}/10")
-        if user_data.get('soreness'):
-            context_parts.append(f"Muscle Soreness: {', '.join(user_data['soreness'])}")
+            context_parts.append(f"Available Equipment: {', '.join(user_data['available_equipment'])}")
 
         return "\n".join(context_parts)
 
@@ -93,17 +77,10 @@ class FitnessAIAgent:
             user_data: Dict[str, Any],
             workout_request: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """
-        Generate a truly personalized workout using AI reasoning
-
-        Args:
-            user_data: Complete user profile and history
-            workout_request: Specific request details (goal, focus areas, etc.)
-        """
+        """Generate a truly personalized workout using AI reasoning"""
 
         user_context = self._build_user_context(user_data)
 
-        # Build the AI prompt with full context
         prompt = f"""You are an expert personal trainer creating a workout plan.
 
 USER PROFILE & HISTORY:
@@ -114,15 +91,6 @@ TODAY'S WORKOUT REQUEST:
 - Focus Areas: {', '.join(workout_request.get('focus_areas', ['full body']))}
 - Available Time: {workout_request.get('duration_minutes', 45)} minutes
 - Energy Level: {workout_request.get('energy_level', 'moderate')}
-
-INSTRUCTIONS:
-1. Analyze the user's history and current progress
-2. Consider their fatigue/soreness levels
-3. Apply progressive overload principles based on their strength progress
-4. Recommend specific exercises with personalized sets, reps, and weights
-5. Adjust intensity based on their energy level today
-6. Include warm-up and cool-down
-7. Provide specific form cues for exercises they might struggle with
 
 Return a JSON workout plan with this structure:
 {{
@@ -135,14 +103,12 @@ Return a JSON workout plan with this structure:
       "reps": "8-12",
       "weight_recommendation": "specific weight in lbs based on their history",
       "rest_seconds": 60,
-      "tempo": "2-1-2-0",
-      "form_cues": ["specific cue 1", "specific cue 2"],
-      "reasoning": "why this exercise and these parameters for this user"
+      "form_cues": ["cue 1", "cue 2"],
+      "reasoning": "why this exercise for this user"
     }}
   ],
-  "progressive_overload_notes": "How this workout progresses from their last similar workout",
-  "recovery_recommendations": "Specific recovery advice based on their current state",
-  "next_workout_suggestion": "What they should focus on next session"
+  "progressive_overload_notes": "How this progresses from last workout",
+  "recovery_recommendations": "Recovery advice"
 }}"""
 
         try:
@@ -151,7 +117,7 @@ Return a JSON workout plan with this structure:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert personal trainer who analyzes user data to create highly personalized, progressive workout plans. You understand periodization, progressive overload, and individual recovery needs."
+                        "content": "You are an expert personal trainer who creates highly personalized workout plans."
                     },
                     {
                         "role": "user",
@@ -175,7 +141,6 @@ Return a JSON workout plan with this structure:
 
             workout_plan = json.loads(content)
 
-            # Enrich exercises with database details
             if 'exercises' in workout_plan:
                 enriched = []
                 for exercise in workout_plan['exercises']:
@@ -190,7 +155,6 @@ Return a JSON workout plan with this structure:
                             'instructions': full_ex.get('instructions', []),
                             'images': full_ex.get('images', []),
                             'primary_muscles': full_ex.get('primaryMuscles', []),
-                            'secondary_muscles': full_ex.get('secondaryMuscles', []),
                             'category': full_ex.get('category', '')
                         })
 
@@ -219,20 +183,13 @@ Return a JSON workout plan with this structure:
             user_data: Dict[str, Any],
             completed_workout: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """
-        Analyze a completed workout and provide insights
-
-        Args:
-            user_data: User profile
-            completed_workout: The workout they just completed with actual performance
-        """
 
         prompt = f"""Analyze this completed workout:
 
 USER: {user_data.get('name', 'User')}
 FITNESS LEVEL: {user_data.get('fitness_level', 'intermediate')}
 
-PLANNED vs ACTUAL:
+COMPLETED WORKOUT:
 {json.dumps(completed_workout, indent=2)}
 
 Provide analysis as JSON:
@@ -240,13 +197,10 @@ Provide analysis as JSON:
   "performance_rating": "excellent/good/moderate/needs_adjustment",
   "strengths": ["what went well"],
   "areas_for_improvement": ["what to work on"],
-  "progressive_overload_achieved": true/false,
   "next_session_recommendations": {{
     "exercises_to_increase": ["exercise names"],
-    "suggested_weight_increases": {{"exercise": "amount"}},
     "focus_areas": ["areas to emphasize"]
   }},
-  "recovery_advice": "specific recovery recommendations",
   "motivation_message": "personalized encouraging message"
 }}"""
 
@@ -254,14 +208,8 @@ Provide analysis as JSON:
             response = self.client.chat.completions.create(
                 model=self.model_id,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a personal trainer analyzing workout performance to optimize future training."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "system", "content": "You are a personal trainer analyzing workout performance."},
+                    {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
                 max_tokens=1000
@@ -281,11 +229,7 @@ Provide analysis as JSON:
             }
 
         except Exception as e:
-            print(f"Error analyzing workout: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def chat_with_trainer(
             self,
@@ -293,37 +237,25 @@ Provide analysis as JSON:
             message: str,
             conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> Dict[str, Any]:
-        """
-        Conversational AI trainer that can answer questions with context
-
-        Args:
-            user_data: User profile and history
-            message: User's message
-            conversation_history: Previous messages in this conversation
-        """
 
         user_context = self._build_user_context(user_data)
 
         messages = [
             {
                 "role": "system",
-                "content": f"""You are a knowledgeable personal trainer having a conversation with a client.
+                "content": f"""You are a expert and knowledgeable personal trainer.
 
 CLIENT CONTEXT:
 {user_context}
 
-Provide helpful, personalized advice based on their specific situation. Be conversational, encouraging, and reference their progress when relevant. If they ask about exercises, sets, or reps, give specific recommendations based on their history and goals."""
+Provide helpful, personalized advice based on their situation."""
             }
         ]
 
-        # Add conversation history
         if conversation_history:
             messages.extend(conversation_history)
 
-        messages.append({
-            "role": "user",
-            "content": message
-        })
+        messages.append({"role": "user", "content": message})
 
         try:
             response = self.client.chat.completions.create(
@@ -333,51 +265,32 @@ Provide helpful, personalized advice based on their specific situation. Be conve
                 max_tokens=800
             )
 
-            assistant_message = response.choices[0].message.content
-
             return {
                 "success": True,
-                "response": assistant_message,
-                "message_type": "conversational"
+                "response": response.choices[0].message.content
             }
 
         except Exception as e:
-            print(f"Error in chat: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def suggest_deload_week(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze if user needs a deload week based on their history"""
 
         prompt = f"""Analyze if this user needs a deload week:
 
 {self._build_user_context(user_data)}
 
-Consider:
-- Training volume over past 4 weeks
-- Fatigue levels
-- Performance trends
-- Recovery indicators
-
 Return JSON:
 {{
   "needs_deload": true/false,
   "confidence": "high/medium/low",
-  "reasoning": "explanation",
-  "deload_recommendations": {{
-    "volume_reduction": "percentage",
-    "intensity_adjustment": "description",
-    "duration": "days"
-  }}
+  "reasoning": "explanation"
 }}"""
 
         try:
             response = self.client.chat.completions.create(
                 model=self.model_id,
                 messages=[
-                    {"role": "system", "content": "You are an expert in periodization and recovery management."},
+                    {"role": "system", "content": "You are an expert in recovery management."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
@@ -392,14 +305,110 @@ Return JSON:
 
             analysis = json.loads(content.strip())
 
-            return {
-                "success": True,
-                "deload_analysis": analysis
-            }
+            return {"success": True, "deload_analysis": analysis}
 
         except Exception as e:
             return {"success": False, "error": str(e)}
 
 
-# Create singleton instance
+# ==================== DATABASE HELPER FUNCTIONS ====================
+
+def get_user_profile(user_id: int, cur) -> Dict[str, Any]:
+    """Get complete user profile"""
+    cur.execute("""
+        SELECT 
+            u.id, u.username, u.email,
+            p.name, p.age, p.gender, p.height_in, p.weight_lb,
+            p.main_focus, p.fitness_level, p.injuries, 
+            p.available_equipment, p.preferred_workout_days
+        FROM users u
+        LEFT JOIN profiles p ON u.id = p.user_id
+        WHERE u.id = %s
+    """, (user_id,))
+
+    profile = cur.fetchone()
+    return dict(profile) if profile else {}
+
+
+def get_user_workout_history(user_id: int, cur, limit: int = 10) -> List[Dict[str, Any]]:
+    cur.execute("""
+        SELECT 
+            w.id, w.start_time, w.end_time, w.duration_min,
+            COUNT(we.id) as exercises_count
+        FROM workouts w
+        LEFT JOIN workout_exercises we ON w.id = we.workout_id
+        WHERE w.user_id = %s AND w.end_time IS NOT NULL
+        GROUP BY w.id
+        ORDER BY w.start_time DESC
+        LIMIT %s
+    """, (user_id, limit))
+
+    return [dict(w) for w in cur.fetchall()]
+
+
+def get_user_strength_progress(user_id: int, cur) -> Dict[str, Dict[str, Any]]:
+    cur.execute("""
+        WITH latest AS (
+            SELECT 
+                e.name,
+                MAX(we.weight_lb) as current_weight,
+                MAX(we.reps_completed) as current_reps
+            FROM workout_exercises we
+            JOIN workouts w ON we.workout_id = w.id
+            JOIN exercises e ON we.exercise_id = e.id
+            WHERE w.user_id = %s
+            GROUP BY e.name
+        )
+        SELECT * FROM latest
+        LIMIT 10
+    """, (user_id,))
+
+    result = {}
+    for row in cur.fetchall():
+        result[row['name']] = {
+            'current_weight': float(row['current_weight']) if row['current_weight'] else 0,
+            'current_reps': int(row['current_reps']) if row['current_reps'] else 0,
+            'progress_percent': 0
+        }
+
+    return result
+
+
+def save_ai_workout_plan(user_id: int, goal: str, workout_data: Dict, cur) -> int:
+    cur.execute("""
+        INSERT INTO ai_workout_plans (user_id, goal, workout_data)
+        VALUES (%s, %s, %s)
+        RETURNING id
+    """, (user_id, goal, psycopg2.extras.Json(workout_data)))
+
+    return cur.fetchone()['id']
+
+
+def get_recent_soreness_data(user_id: int, cur) -> List[str]:
+    cur.execute("""
+        SELECT DISTINCT e.category
+        FROM workout_exercises we
+        JOIN workouts w ON we.workout_id = w.id
+        JOIN exercises e ON we.exercise_id = e.id
+        WHERE w.user_id = %s AND w.start_time > NOW() - INTERVAL '48 hours'
+    """, (user_id,))
+
+    return [c['category'] for c in cur.fetchall() if c.get('category')]
+
+
+def save_ai_conversation(user_id: int, message: str, response: str, cur):
+    cur.execute("""
+        INSERT INTO ai_conversations (user_id, message, response)
+        VALUES (%s, %s, %s)
+    """, (user_id, message, response))
+
+
+def update_workout_plan_feedback(plan_id: int, rating: int, notes: str, cur):
+    cur.execute("""
+        UPDATE ai_workout_plans
+        SET feedback_rating = %s, feedback_notes = %s, was_completed = TRUE
+        WHERE id = %s
+    """, (rating, notes, plan_id))
+
+
 fitness_ai_agent = FitnessAIAgent()

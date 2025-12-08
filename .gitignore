@@ -5,6 +5,8 @@ __pycache__/
 
 # local secrets
 .env
+#fine tuned model
+finetune/fine_tuned_model_id.txt
 
 # Flutter files
 .dart_tool

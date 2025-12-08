@@ -5,6 +5,7 @@ from flask_cors import CORS     # CORS import needed to test app locally
 from api.auth import auth_bp
 from api.challenges import challenge_bp
 from api.users import users_bp
+from api.ai import ai_bp
 
 def create_app():
     load_dotenv()
@@ -23,6 +24,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(challenge_bp, url_prefix='/api/challenges')
     app.register_blueprint(users_bp, url_prefix='/api/users') # Note the /users prefix
+    app.register_blueprint(ai_bp, url_prefix='/api/ai')
 
     # test routes
     @app.route('/')
