@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:journey_application/screens/login.dart';
 import 'personalization_screen.dart';
 import '../authentication/authentication.dart';
+import '../providers/user_provider.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -73,6 +75,12 @@ class _SignUpState extends State<SignUp> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Account created! Please log in.')),
         );
+        
+        // Fetch user data after successful sign up
+        await context.read<UserProvider>().refreshUserData();
+        
+        if (!mounted) return;
+        
         Navigator.pushReplacement(
           context,
           _createSlideRoute(const PersonalizationScreen()),
