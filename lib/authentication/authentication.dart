@@ -1,10 +1,61 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_service.dart';
 
 class AuthService {
   final _storage = const FlutterSecureStorage();
+
+  // --- Get User ID from JWT Token ---
+  Future<String?> getUserIdFromToken() async {
+    try {
+      final token = await getToken();
+      if (token == null) return null;
+      
+      // JWT format: header.payload.signature
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        debugPrint('Invalid token format: expected 3 parts, got ${parts.length}');
+        return null;
+      }
+      
+      // Decode the payload (add padding if necessary)
+      String payload = parts[1];
+      
+      // Add padding if necessary for base64 decoding
+      switch (payload.length % 4) {
+        case 1:
+          payload += '===';
+          break;
+        case 2:
+          payload += '==';
+          break;
+        case 3:
+          payload += '=';
+          break;
+      }
+      
+      try {
+        final decoded = utf8.decode(base64Url.decode(payload));
+        final json = jsonDecode(decoded) as Map<String, dynamic>;
+        
+        debugPrint('JWT payload decoded: $json');
+        
+        final userId = json['user_id'];
+        debugPrint('Extracted user_id: $userId');
+        
+        return userId?.toString();
+      } catch (e) {
+        debugPrint('Error decoding JWT payload: $e');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error in getUserIdFromToken: $e');
+      return null;
+    }
+  }
 
   // --- Persistent Auth Token ---
   Future<String?> getToken() async {
@@ -45,7 +96,7 @@ class AuthService {
   }
 
   // --- Log In ---
-  Future<bool> login(String email, String password) async {
+  Future<Map<String, dynamic>?> login(String email, String password) async {
     try {
       final response = await http.post(
         Uri.parse('${ApiService.auth()}/login'),
@@ -64,14 +115,15 @@ class AuthService {
           final token = responseBody['token'] as String?;
           if (token != null) {
             await _storage.write(key: 'auth_token', value: token);
-            return true;
+            // Return user data from the response
+            return responseBody['user'] as Map<String, dynamic>?;
           }
         }
-        return false;
+        return null;
       }
-      return false;
+      return null;
     } catch (e) {
-      return false;
+      return null;
     }
   }
 
