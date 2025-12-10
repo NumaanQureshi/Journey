@@ -71,12 +71,14 @@ jobs:
         if: steps.check_tests.outputs.has_tests == 'true'
         run: flutter test
       
-      # java is sometimes necessary for building apk
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+      # Build Steps to be added later
+      
+      # # java is sometimes necessary for building apk
+      # - name: Setup Java
+      #   uses: actions/setup-java@v4
+      #   with:
+      #     distribution: 'temurin'
+      #     java-version: '17'
 
-      - name: Flutter Build (Android)
-        run: flutter build apk --release
+      # - name: Flutter Build (Android)
+      #   run: flutter build apk --release
