@@ -1,0 +1,26 @@
+name: Journey Frontend
+
+on:
+  pull_request:
+    branches:
+      - main
+      - frontend
+      - 'frontend-**'
+  push:
+    branches:
+      - main
+      - frontend
+      - 'frontend-**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/cirruslabs/flutter:stable
+    steps:
+      - name: Flutter Initialization
+        run: flutter --version && flutter pub get && apt-get update
+      - name: Flutter Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Flutter Test
+        run: flutter test
