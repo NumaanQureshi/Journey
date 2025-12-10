@@ -1,0 +1,84 @@
+name: Journey Frontend
+
+on:
+  pull_request:
+    branches:
+      - main
+      - frontend
+      - 'frontend-**'
+  push:
+    branches:
+      - main
+      - frontend
+      - 'frontend-**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    outputs:
+      is_flutter_project: ${{ steps.check_project.outputs.is_flutter_project }}
+
+    steps:
+      # Pull code from repo
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # all flutter projects have pubspec.yaml. if nonexistent, then skip the test
+      - name: Check if pubspec.yaml exists
+        id: check_project
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            echo "is_flutter_project=true" >> $GITHUB_OUTPUT
+            echo "Flutter project found."
+          else
+            echo "is_flutter_project=false" >> $GITHUB_OUTPUT
+            echo "Flutter project not found. Skipping Flutter CI steps."
+          fi
+
+  # If flutter project is found, run flutter tests
+  flutter_ci:
+    needs: test
+    if: needs.test.outputs.is_flutter_project == 'true'
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/cirruslabs/flutter:stable
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Flutter Initialization
+        run: flutter --version && flutter pub get
+        
+      - name: Flutter Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      # Checks if 'test' directory exists, also if it contains any content
+      - name: Check for Test Files
+        id: check_tests
+        run: |
+          if [ -d "test" ] && [ "$(ls -A test)" ]; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+            echo "Test files found. Running flutter test."
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+            echo "No test files found. Skipping flutter test."
+          fi
+
+      - name: Flutter Test
+        if: steps.check_tests.outputs.has_tests == 'true'
+        run: flutter test
+      
+      # Build Steps to be added later
+      
+      # # java is sometimes necessary for building apk
+      # - name: Setup Java
+      #   uses: actions/setup-java@v4
+      #   with:
+      #     distribution: 'temurin'
+      #     java-version: '17'
+
+      # - name: Flutter Build (Android)
+      #   run: flutter build apk --release
