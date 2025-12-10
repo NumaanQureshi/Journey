@@ -15,9 +15,9 @@ class _FriendState extends State<Friend> {
   void _addFriend(String name) {
     if (name.isEmpty) return;
     setState(() => _friends.add(name));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Added friend: $name')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Added friend: $name')));
   }
 
   Future<void> _showAddDialog() async {
@@ -25,14 +25,35 @@ class _FriendState extends State<Friend> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add a Friend'),
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text('Add a Friend', style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: 'Friend name'),
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Friend name',
+            hintStyle: TextStyle(color: Colors.white70),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.blue),
+            ),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Add')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Add'),
+          ),
         ],
       ),
     );
@@ -49,66 +70,75 @@ class _FriendState extends State<Friend> {
         iconTheme: const IconThemeData(color: Colors.blue),
         title: Text(
           'Friends',
-          style: GoogleFonts.lexend(
-            color: const Color(0xFFFBBF18),
-          ),
+          style: GoogleFonts.lexend(color: const Color(0xFFFBBF18)),
         ),
         centerTitle: true,
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF1A1A1A),
       ),
-      body: Stack(
-        children: [
-          SizedBox.expand(
-            child: Image.asset(
-              'assets/images/profile_bg.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Column(
+      backgroundColor: const Color(0xFF1A1A1A),
+      body: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Your friends',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+                     const Text(
+                      'Your friends',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
                     ElevatedButton.icon(
                       onPressed: _showAddDialog,
                       icon: const Icon(Icons.person_add),
                       label: const Text('Add a Friend'),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF667DB5),
-                          foregroundColor: Colors.white),
+                        backgroundColor: const Color(0xFF2C2C2C),
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Colors.white30),
+              const Divider(height: 1, color: Colors.white24),
               Expanded(
                 child: _friends.isEmpty
                     ? const Center(
-                        child:
-                            Text('No friends yet', style: TextStyle(color: Colors.white)))
+                        child: Text(
+                          'No friends yet',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      )
                     : ListView.builder(
                         padding: const EdgeInsets.all(8.0),
                         itemCount: _friends.length,
                         itemBuilder: (context, index) {
                           final name = _friends[index];
                           return Card(
-                            color: Colors.white,
+                            color: const Color(0xFF2C2C2C),
+                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             child: ListTile(
-                              leading:
-                                  const CircleAvatar(child: Icon(Icons.person)),
-                              title: Text(name,
-                                  style: const TextStyle(color: Colors.black87)),
+                              leading: const CircleAvatar(
+                                backgroundColor: Colors.blue,
+                                child: Icon(Icons.person),
+                              ),
+                              title: Text(
+                                name,
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                              ),
                               trailing: IconButton(
-                                icon: const Icon(Icons.delete_outline,
-                                    color: Colors.redAccent),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.redAccent,
+                                ),
                                 onPressed: () {
                                   setState(() => _friends.removeAt(index));
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Removed $name')));
+                                    SnackBar(content: Text('Removed $name')),
+                                  );
                                 },
                               ),
                             ),
@@ -118,12 +148,13 @@ class _FriendState extends State<Friend> {
               ),
               Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Text('Note: Friends are currently stored locally; DB integration coming soon.', style: TextStyle(color: Colors.grey[400])),
+                child: Text(
+                  'Note: Friends are currently stored locally; DB integration coming soon.',
+                  style: TextStyle(color: Colors.grey[400]),
+                ),
               ),
             ],
           ),
-        ],
-      ),
     );
   }
 }
