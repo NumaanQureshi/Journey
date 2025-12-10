@@ -15,12 +15,55 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    outputs:
+      is_flutter_project: ${{ steps.check_project.outputs.is_flutter_project }}
+
+    steps:
+      # Pull code from repo
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # all flutter projects have pubspec.yaml. if nonexistent, then skip the test
+      - name: Check if pubspec.yaml exists
+        id: check_project
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            echo "is_flutter_project=true" >> $GITHUB_OUTPUT
+            echo "Flutter project found."
+          else
+            echo "is_flutter_project=false" >> $GITHUB_OUTPUT
+            echo "pubspec.yaml not found. Skipping Flutter CI steps."
+          fi
+
+  # If flutter project is found, run flutter tests
+  flutter_ci:
+    needs: test
+    if: needs.test.outputs.is_flutter_project == 'true'
+    runs-on: ubuntu-latest
+
     container:
       image: ghcr.io/cirruslabs/flutter:stable
+
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Flutter Initialization
-        run: flutter --version && flutter pub get && apt-get update
+        run: flutter --version && flutter pub get
+        
       - name: Flutter Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
       - name: Flutter Test
         run: flutter test
+      
+      # need to set up java for tools necessary for building apk
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Flutter Build (Android)
+        run: flutter build apk --release
