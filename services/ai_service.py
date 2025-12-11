@@ -11,12 +11,11 @@ class FitnessAIAgent:
     def __init__(self):
         self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-        # Load fine-tuned model
-        try:
-            with open("fine_tuned_model_id.txt", "r") as f:
-                self.model_id = f.read().strip()
-            print(f"✓ Loaded fine-tuned model: {self.model_id}")
-        except FileNotFoundError:
+        self.model_id = os.environ.get("FINETUNED_MODEL_ID")
+    
+        if self.model_id:
+            print(f"✓ Using fine-tuned model")
+        else:
             self.model_id = "gpt-4o-mini-2024-07-18"
             print(f"⚠ Using base model: {self.model_id}")
 
