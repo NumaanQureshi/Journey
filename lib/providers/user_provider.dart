@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import '../authentication/api_service.dart';
-import '../authentication/authentication.dart';
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
 
 class User {
   final String userId;

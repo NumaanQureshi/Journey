@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:journey_application/screens/login.dart';
 import 'personalization_screen.dart';
-import '../authentication/authentication.dart';
+import '../services/auth_service.dart';
 import '../providers/user_provider.dart';
 
 class SignUp extends StatefulWidget {

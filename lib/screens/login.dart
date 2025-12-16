@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'home_screen.dart';
 import 'sign_up.dart';
-import '../authentication/authentication.dart';
+import '../services/auth_service.dart';
 import '../featureflags/feature_flags.dart';
 import '../providers/user_provider.dart';
 
