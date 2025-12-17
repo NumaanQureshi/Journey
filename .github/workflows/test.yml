@@ -1,4 +1,4 @@
-name: Journey Frontend
+name: Journey Tests
 
 on:
   pull_request:
