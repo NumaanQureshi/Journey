@@ -7,4 +7,5 @@ class ApiService {
   static String auth() => '${getBaseUrl()}/auth';
   static String challenges() => '${getBaseUrl()}/challenges/';
   static String me() => '${auth()}/me';
+  static String ai() => '${getBaseUrl()}/ai';
 }

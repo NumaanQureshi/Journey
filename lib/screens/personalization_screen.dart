@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'home_screen.dart';
 import '../featureflags/feature_flags.dart';
-import '../authentication/authentication.dart';
-import '../authentication/api_service.dart';
+import '../services/auth_service.dart';
+import '../services/api_service.dart';
 
 class PersonalizationScreen extends StatefulWidget {
   const PersonalizationScreen({super.key});
