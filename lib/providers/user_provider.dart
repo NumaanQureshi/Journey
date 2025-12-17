@@ -105,7 +105,6 @@ class UserProvider extends ChangeNotifier {
   }
 
   /// Update user data from login response
-  /// Called after successful login/signup with the response data
   void updateUserFromLoginResponse(Map<String, dynamic> userData) {
     try {
       debugPrint('updateUserFromLoginResponse - received: $userData');
@@ -253,14 +252,14 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  /// Update user data manually (useful when other parts of app update user info)
+  /// Update user data manually
   void updateUser(User user) {
     _user = user;
     _saveUserToStorage(user);
     notifyListeners();
   }
 
-  /// Clear user data (e.g., on logout)
+  /// Clear user data
   Future<void> clearUser() async {
     _user = null;
     _error = null;
@@ -269,7 +268,6 @@ class UserProvider extends ChangeNotifier {
   }
 
   /// Fetch user data from backend by user ID
-  /// Useful if you have the user ID separately
   Future<void> fetchUserById(String userId) async {
     try {
       _isLoading = true;
