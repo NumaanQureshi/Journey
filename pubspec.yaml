@@ -1,0 +1,53 @@
+name: journey_application
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+# Dependencies specify other packages that your package needs in order to work.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  google_sign_in: ^7.2.0
+  video_player: ^2.6.1
+  google_fonts: ^6.3.2
+  http: ^1.5.0
+  flutter_secure_storage: ^9.2.4
+  image_picker: ^1.2.1
+  provider: ^6.1.5+1
+  shared_preferences: ^2.5.3
+  flutter_svg: ^2.2.3
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+
+  fonts:
+    - family: OCR Extended A
+      fonts:
+        - asset: assets/fonts/OCRAEXT.TTF
+          weight: 700
+        - asset: assets/fonts/Itim-Regular.ttf
