@@ -6,7 +6,6 @@ import 'package:journey_application/screens/workout_screen.dart';
 import 'package:journey_application/screens/settings_screen.dart';
 import 'package:journey_application/screens/user_analytics_screen.dart';
 import 'package:journey_application/providers/user_provider.dart';
-import 'leaderboard_screen.dart';
 
 class SideMenu extends StatelessWidget {
   final String? currentScreen;
@@ -58,110 +57,89 @@ class SideMenu extends StatelessWidget {
                 ),
 
                 // HOME
-              ListTile(
-                leading: const Icon(Icons.home, color: Colors.blue),
-                title: const Text(
-                  'Home',
-                  style: TextStyle(color: Colors.white),
+                ListTile(
+                  leading: const Icon(Icons.home, color: Colors.blue),
+                  title: const Text(
+                    'Home',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  selected: currentScreen == 'Home',
+                  selectedTileColor: Colors.grey.withValues(alpha: 0.3),
+                  hoverColor: Colors.transparent,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (currentScreen != 'Home') {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      );
+                    }
+                  },
                 ),
-                selected: currentScreen == 'Home',
-                selectedTileColor: Colors.grey.withValues(alpha: 0.3),
-                hoverColor: Colors.transparent,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (currentScreen != 'Home') {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomeScreen()),
-                    );
-                  }
-                },
-              ),
 
-              // WORKOUT
-              ListTile(
-                leading: const Icon(Icons.fitness_center, color: Colors.red),
-                title: const Text(
-                  'Workout',
-                  style: TextStyle(color: Colors.white),
+                // WORKOUT
+                ListTile(
+                  leading: const Icon(Icons.fitness_center, color: Colors.red),
+                  title: const Text(
+                    'Workout',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  selected: currentScreen == 'Workout',
+                  selectedTileColor: Colors.grey.withValues(alpha: 0.3),
+                  hoverColor: Colors.transparent,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (currentScreen != 'Workout') {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const Workout()),
+                      );
+                    }
+                  },
                 ),
-                selected: currentScreen == 'Workout',
-                selectedTileColor: Colors.grey.withValues(alpha: 0.3),
-                hoverColor: Colors.transparent,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (currentScreen != 'Workout') {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const Workout()),
-                    );
-                  }
-                },
-              ),
 
-              // CHALLENGES
-              ListTile(
-                leading: const Icon(Icons.emoji_events, color: Colors.amber),
-                title: const Text(
-                  'Challenges',
-                  style: TextStyle(color: Colors.white),
+                // CHALLENGES
+                ListTile(
+                  leading: const Icon(Icons.emoji_events, color: Colors.amber),
+                  title: const Text(
+                    'Challenges',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  selected: currentScreen == 'Challenges',
+                  selectedTileColor: Colors.grey.withValues(alpha: 0.3),
+                  hoverColor: Colors.transparent,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (currentScreen != 'Challenges') {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const Challenges()),
+                      );
+                    }
+                  },
                 ),
-                selected: currentScreen == 'Challenges',
-                selectedTileColor: Colors.grey.withValues(alpha: 0.3),
-                hoverColor: Colors.transparent,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (currentScreen != 'Challenges') {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const Challenges()),
-                    );
-                  }
-                },
-              ),
-              // LEADERBOARD — updated
-              ListTile(
-                leading: const Icon(Icons.leaderboard, color: Colors.green),
-                title: const Text(
-                  'Leaderboard',
-                  style: TextStyle(color: Colors.white),
-                ),
-                selected: currentScreen == 'Leaderboard',
-                selectedTileColor: Colors.grey.withValues(alpha: 0.3),
-                hoverColor: Colors.transparent,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (currentScreen != 'Leaderboard') {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LeaderboardScreen()),
-                    );
-                  }
-                },
-              ),
 
-              // ANALYTICS
-              ListTile(
-                leading: const Icon(Icons.analytics, color: Colors.purpleAccent),
-                title: const Text(
-                  'Analytics',
-                  style: TextStyle(color: Colors.white),
+                // ANALYTICS
+                ListTile(
+                  leading: const Icon(Icons.analytics, color: Colors.purpleAccent),
+                  title: const Text(
+                    'Analytics',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  selected: currentScreen == 'Analytics',
+                  selectedTileColor: Colors.grey.withValues(alpha: 0.3),
+                  hoverColor: Colors.transparent,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (currentScreen != 'Analytics') {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const UserAnalyticsScreen()),
+                      );
+                    }
+                  },
                 ),
-                selected: currentScreen == 'Analytics',
-                selectedTileColor: Colors.grey.withValues(alpha: 0.3),
-                hoverColor: Colors.transparent,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (currentScreen != 'Analytics') {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const UserAnalyticsScreen()),
-                    );
-                  }
-                },
-              ),
 
                 const Spacer(),
 
