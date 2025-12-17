@@ -6,13 +6,13 @@ on:
       - main
       - frontend
       - 'frontend-**'
-      - test-release
+      - 'test-release'
   push:
     branches:
       - main
       - frontend
       - 'frontend-**'
-      - test-release
+      - 'test-release'
 
 jobs:
   test:
