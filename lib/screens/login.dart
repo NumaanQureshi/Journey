@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'home_screen.dart';
 import 'sign_up.dart';
-import '../authentication/authentication.dart';
+import '../services/auth_service.dart';
 import '../featureflags/feature_flags.dart';
+import '../providers/user_provider.dart';
 
 
 class Login extends StatefulWidget {
@@ -62,7 +64,7 @@ class _LoginState extends State<Login> {
         const SnackBar(content: Text('Attempting login...')), // debug statement
       );
 
-      final success = await _authService.login(
+      final userData = await _authService.login(
         _emailController.text,
         _passwordController.text,
       );
@@ -71,10 +73,16 @@ class _LoginState extends State<Login> {
 
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-      if (success) {
+      if (userData != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful!')), // debug statement
         );
+        
+        // Update user provider with data from login response
+        context.read<UserProvider>().updateUserFromLoginResponse(userData);
+        
+        if (!mounted) return;
+        
         Navigator.pushReplacement(
           context,
           _createSlideRoute(const HomeScreen()), // successful login
