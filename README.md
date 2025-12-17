@@ -17,4 +17,3 @@ Created by **Sahel Reja**, **Numaan Qureshi**, and **Tawhidul Islam**.
 
 🏃🏽‍♀️ Weekly Challenges
 
-

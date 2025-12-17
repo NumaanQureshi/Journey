@@ -1,0 +1,1 @@
+SELECT current_progress, goal, is_completed FROM public.challenges WHERE id = %s AND user_id = %s FOR UPDATE;
