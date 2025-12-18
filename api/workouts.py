@@ -6,6 +6,57 @@ import datetime
 
 workouts_bp = Blueprint('workouts', __name__)
 
+# ===================== Exercise Library =====================
+
+# GET all exercises
+@workouts_bp.route('/exercises', methods=['GET'])
+def get_all_exercises():
+    """Get all exercises with optional pagination."""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        # Limit to reasonable pagination
+        limit = min(limit, 500)
+        
+        sql_query = load_sql_query('select_all_exercises.sql')
+        cur.execute(sql_query, (limit, offset))
+        
+        exercises = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "exercises": exercises}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# GET exercise by ID
+@workouts_bp.route('/exercises/<int:exercise_id>', methods=['GET'])
+def get_exercise(exercise_id):
+    """Get a specific exercise with full details."""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        sql_query = load_sql_query('select_exercise_by_id.sql')
+        cur.execute(sql_query, (exercise_id,))
+        
+        exercise = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not exercise:
+            return jsonify({"success": False, "error": "Exercise not found"}), 404
+        
+        return jsonify({"success": True, "exercise": exercise}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # ===================== User Planning and Customization =====================
 
 # GET user's programs
