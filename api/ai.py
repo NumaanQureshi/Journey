@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 from utils.utilities import token_required, get_db_connection
+from utils.helper_functions import calculate_age
 from services.ai_service import (
     fitness_ai_agent,
     get_user_profile,
@@ -32,12 +33,21 @@ def generate_personalized_workout(user_id):
         strength_progress = get_user_strength_progress(user_id, cur)
         recent_soreness = get_recent_soreness_data(user_id, cur)
 
+        # Calculate age from date_of_birth
+        age = None
+        if profile.get('date_of_birth'):
+            try:
+                dob = profile.get('date_of_birth')
+                age = calculate_age(dob.year, dob.month, dob.day)
+            except Exception:
+                age = None
+
         # Build user data
         user_data = {
             'user_id': user_id,
             'name': profile.get('name'),
             'fitness_level': profile.get('fitness_level', 'intermediate'),
-            'age': profile.get('age'),
+            'age': age,
             'weight': profile.get('weight_lb'),
             'height': profile.get('height_in'),
             'goals': [profile.get('main_focus')] if profile.get('main_focus') else [],
