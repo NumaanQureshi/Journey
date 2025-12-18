@@ -17,6 +17,13 @@ class UserAnalyticsScreen extends StatelessWidget {
         centerTitle: true,
         backgroundColor: const Color(0xFF1A1A1A),
         iconTheme: const IconThemeData(color: Colors.blue),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(4.0),
+          child: Container(
+            color: Colors.orange,
+            height: 4.0,
+          )
+        ),
       ),
       backgroundColor: const Color(0xFF1A1A1A),
       body: SingleChildScrollView(
