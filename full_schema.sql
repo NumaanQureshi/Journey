@@ -52,29 +52,73 @@ create table public.exercises (
   constraint exercises_name_key unique (name)
 ) TABLESPACE pg_default;
 
-create table public.plans (
-  id integer not null,
-  user_id integer null,
-  name character varying not null,
-  is_public boolean null default false,
-  created_at timestamp without time zone null default CURRENT_TIMESTAMP,
-  constraint plans_pkey primary key (id),
-  constraint fk_plan_user foreign KEY (user_id) references users (id) on delete set null
-) TABLESPACE pg_default;
+-- A. PROGRAMS (The high-level container, e.g., "Summer Shred")
+CREATE TABLE public.programs (
+  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id integer NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  description text,
+  is_active boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now()
+);
 
-create table public.workouts (
-  id integer not null,
-  user_id integer not null,
-  plan_id integer null,
-  start_time timestamp without time zone not null,
-  end_time timestamp without time zone null,
-  duration_min numeric null,
-  calories_burned integer null,
-  total_points_earned integer null default 0,
-  constraint workouts_pkey primary key (id),
-  constraint fk_workout_plan foreign KEY (plan_id) references plans (id) on delete set null,
-  constraint fk_workout_user foreign KEY (user_id) references users (id) on delete CASCADE
-) TABLESPACE pg_default;
+-- B. WORKOUT_TEMPLATES (The routine blueprint, e.g., "Leg Day")
+CREATE TABLE public.workout_templates (
+  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  program_id integer NOT NULL REFERENCES public.programs(id) ON DELETE CASCADE,
+  name text NOT NULL, 
+  day_order integer DEFAULT 1, -- e.g. 1 for Monday, 2 for Tuesday
+  notes text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+-- C. TEMPLATE_EXERCISES (The recipe for the routine)
+CREATE TABLE public.template_exercises (
+  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  template_id integer NOT NULL REFERENCES public.workout_templates(id) ON DELETE CASCADE,
+  exercise_id integer NOT NULL REFERENCES public.exercises(id) ON DELETE CASCADE,
+  
+  target_sets integer DEFAULT 3,
+  target_reps text, -- e.g. "8-12"
+  target_weight_lb numeric, 
+  rest_seconds integer DEFAULT 60,
+  order_index integer DEFAULT 0 
+);
+
+-- ==========================================
+-- 3. CREATE "LOGGING" TABLES
+-- ==========================================
+
+-- D. WORKOUT_SESSIONS (The specific instance of going to the gym)
+CREATE TABLE public.workout_sessions (
+  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id integer NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  template_id integer REFERENCES public.workout_templates(id) ON DELETE SET NULL, 
+  
+  start_time timestamp with time zone DEFAULT now(),
+  end_time timestamp with time zone,
+  status text DEFAULT 'in_progress', -- 'in_progress', 'completed'
+  
+  duration_min numeric,
+  calories_burned integer,
+  total_volume_lb numeric,
+  notes text
+);
+
+-- E. WORKOUT_SETS (The actual work performed)
+CREATE TABLE public.workout_sets (
+  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  session_id integer NOT NULL REFERENCES public.workout_sessions(id) ON DELETE CASCADE,
+  exercise_id integer NOT NULL REFERENCES public.exercises(id),
+  
+  set_number integer NOT NULL, -- e.g. 1, 2, 3
+  reps_completed integer,
+  weight_lb numeric,
+  rpe integer, -- Optional: Rate of Perceived Exertion (1-10)
+  is_warmup boolean DEFAULT false,
+  
+  created_at timestamp with time zone DEFAULT now()
+);
 
 create table public.challenges (
   id serial not null,
