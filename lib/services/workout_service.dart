@@ -185,7 +185,6 @@ class WorkoutSession {
 
 class WorkoutService {
   static final _authService = AuthService();
-  static String _endpoint() => '${ApiService.getBaseUrl()}/workouts';
 
   // ==================== PROGRAMS ====================
 
@@ -196,7 +195,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.get(
-        Uri.parse('${_endpoint()}/programs'),
+        Uri.parse('${ApiService.workouts()}/programs'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -226,7 +225,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.post(
-        Uri.parse('${_endpoint()}/programs'),
+        Uri.parse('${ApiService.workouts()}/programs'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -264,7 +263,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.put(
-        Uri.parse('${_endpoint()}/programs/$programId'),
+        Uri.parse('${ApiService.workouts()}/programs/$programId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -295,7 +294,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.get(
-        Uri.parse('${_endpoint()}/programs/$programId/templates'),
+        Uri.parse('${ApiService.workouts()}/programs/$programId/templates'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -326,7 +325,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.post(
-        Uri.parse('${_endpoint()}/programs/$programId/templates'),
+        Uri.parse('${ApiService.workouts()}/programs/$programId/templates'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -369,7 +368,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.post(
-        Uri.parse('${_endpoint()}/templates/$templateId/exercises'),
+        Uri.parse('${ApiService.workouts()}/templates/$templateId/exercises'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -411,7 +410,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.put(
-        Uri.parse('${_endpoint()}/sets/$templateExerciseId'),
+        Uri.parse('${ApiService.workouts()}/sets/$templateExerciseId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -447,7 +446,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.post(
-        Uri.parse('${_endpoint()}/sessions'),
+        Uri.parse('${ApiService.workouts()}/sessions'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -478,7 +477,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.get(
-        Uri.parse('${_endpoint()}/sessions'),
+        Uri.parse('${ApiService.workouts()}/sessions'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -504,7 +503,7 @@ class WorkoutService {
       if (token == null) throw Exception('No auth token');
 
       final response = await http.get(
-        Uri.parse('${_endpoint()}/exercises'),
+        Uri.parse('${ApiService.workouts()}/exercises'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
