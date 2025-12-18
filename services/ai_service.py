@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 import requests
 from datetime import datetime
 import psycopg2
+from utils.sql_loader import load_sql_query
 
 
 class FitnessAIAgent:
@@ -314,53 +315,23 @@ Return JSON:
 
 def get_user_profile(user_id: int, cur) -> Dict[str, Any]:
     """Get complete user profile"""
-    cur.execute("""
-        SELECT 
-            u.id, u.username, u.email,
-            p.name, p.age, p.gender, p.height_in, p.weight_lb,
-            p.main_focus, p.fitness_level, p.injuries, 
-            p.available_equipment, p.preferred_workout_days
-        FROM users u
-        LEFT JOIN profiles p ON u.id = p.user_id
-        WHERE u.id = %s
-    """, (user_id,))
+    query = load_sql_query('select_full_user_profile.sql')
+    cur.execute(query, (user_id,))
 
     profile = cur.fetchone()
     return dict(profile) if profile else {}
 
 
 def get_user_workout_history(user_id: int, cur, limit: int = 10) -> List[Dict[str, Any]]:
-    cur.execute("""
-        SELECT 
-            w.id, w.start_time, w.end_time, w.duration_min,
-            COUNT(we.id) as exercises_count
-        FROM workouts w
-        LEFT JOIN workout_exercises we ON w.id = we.workout_id
-        WHERE w.user_id = %s AND w.end_time IS NOT NULL
-        GROUP BY w.id
-        ORDER BY w.start_time DESC
-        LIMIT %s
-    """, (user_id, limit))
+    query = load_sql_query('select_ai_user_workout_history.sql')
+    cur.execute(query, (user_id, limit))
 
     return [dict(w) for w in cur.fetchall()]
 
 
 def get_user_strength_progress(user_id: int, cur) -> Dict[str, Dict[str, Any]]:
-    cur.execute("""
-        WITH latest AS (
-            SELECT 
-                e.name,
-                MAX(we.weight_lb) as current_weight,
-                MAX(we.reps_completed) as current_reps
-            FROM workout_exercises we
-            JOIN workouts w ON we.workout_id = w.id
-            JOIN exercises e ON we.exercise_id = e.id
-            WHERE w.user_id = %s
-            GROUP BY e.name
-        )
-        SELECT * FROM latest
-        LIMIT 10
-    """, (user_id,))
+    query = load_sql_query('select_user_strength_progress_ai.sql')
+    cur.execute(query, (user_id,))
 
     result = {}
     for row in cur.fetchall():
@@ -374,40 +345,28 @@ def get_user_strength_progress(user_id: int, cur) -> Dict[str, Dict[str, Any]]:
 
 
 def save_ai_workout_plan(user_id: int, goal: str, workout_data: Dict, cur) -> int:
-    cur.execute("""
-        INSERT INTO ai_workout_plans (user_id, goal, workout_data)
-        VALUES (%s, %s, %s)
-        RETURNING id
-    """, (user_id, goal, psycopg2.extras.Json(workout_data)))
+    query = load_sql_query('insert_ai_workout_plan.sql')
+    cur.execute(query, (user_id, goal, psycopg2.extras.Json(workout_data)))
 
     return cur.fetchone()['id']
 
 
 def get_recent_soreness_data(user_id: int, cur) -> List[str]:
-    cur.execute("""
-        SELECT DISTINCT e.category
-        FROM workout_exercises we
-        JOIN workouts w ON we.workout_id = w.id
-        JOIN exercises e ON we.exercise_id = e.id
-        WHERE w.user_id = %s AND w.start_time > NOW() - INTERVAL '48 hours'
-    """, (user_id,))
+    query = load_sql_query('select_recent_soreness.sql')
+    cur.execute(query, (user_id,))
 
     return [c['category'] for c in cur.fetchall() if c.get('category')]
 
 
 def save_ai_conversation(user_id: int, message: str, response: str, cur):
-    cur.execute("""
-        INSERT INTO ai_conversations (user_id, message, response)
-        VALUES (%s, %s, %s)
-    """, (user_id, message, response))
+    query = load_sql_query('insert_ai_conversation.sql')
+    cur.execute(query, (user_id, message, response))
 
 
 def update_workout_plan_feedback(plan_id: int, rating: int, notes: str, cur):
-    cur.execute("""
-        UPDATE ai_workout_plans
-        SET feedback_rating = %s, feedback_notes = %s, was_completed = TRUE
-        WHERE id = %s
-    """, (rating, notes, plan_id))
+    query = load_sql_query('update_ai_workout_plan_feedback.sql')
+    cur.execute(query, (rating, notes, plan_id))
+
 
 
 fitness_ai_agent = FitnessAIAgent()
