@@ -168,7 +168,8 @@ class _ChallengesState extends State<Challenges> {
   void initState() {
     super.initState();
     // ChallengeManager.resetDaily();
-    // ChallengeManager.resetWeekly();    dailyReset = ChallengeManager.getNextDailyReset();
+    // ChallengeManager.resetWeekly();
+    dailyReset = ChallengeManager.getNextDailyReset();
     weeklyReset = ChallengeManager.getNextWeeklyReset();
 
     _dailyTimer = CountdownTimer(
@@ -277,15 +278,22 @@ class _ChallengesState extends State<Challenges> {
       drawer: const SideMenu(currentScreen: 'Challenges'),
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Color(0xFFFBBF18)),
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF1A1A1A),
         elevation: 0,
         centerTitle: true,
         title: Text(
           "Challenges",
           style: GoogleFonts.lexend(color: const Color(0xFFFBBF18)),
         ),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(4.0),
+          child: Container(
+            color: Colors.orange,
+            height: 4.0,
+          )
+        ),
       ),
-      backgroundColor: const Color(0xFF252525),
+      backgroundColor: const Color(0xFF1A1A1A),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
