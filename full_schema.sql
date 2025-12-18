@@ -2,7 +2,7 @@ create table public.users (
   id serial not null,
   email character varying(100) not null,
   password_hash character varying(255) not null,
-  username character varying(50) NOT NULL,
+  username character varying(50) not null,
   created_at timestamp without time zone null default CURRENT_TIMESTAMP,
   updated_at timestamp without time zone null default CURRENT_TIMESTAMP,
   constraint users_pkey primary key (id),
@@ -13,13 +13,17 @@ create table public.users (
 create table public.profiles (
   user_id integer not null,
   name character varying(255) null,
-  age integer null,
   gender character varying(50) null,
   height_in numeric null,
   weight_lb numeric null,
   main_focus character varying(50) null,
   goal_weight_lb numeric null,
   activity_intensity character varying(50) null,
+  fitness_level character varying(50) null,
+  injuries text null,
+  available_equipment text[] null,
+  preferred_workout_days integer null default 3,
+  date_of_birth date null,
   constraint profiles_pkey primary key (user_id),
   constraint profiles_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
 ) TABLESPACE pg_default;
@@ -52,73 +56,77 @@ create table public.exercises (
   constraint exercises_name_key unique (name)
 ) TABLESPACE pg_default;
 
--- A. PROGRAMS (The high-level container, e.g., "Summer Shred")
-CREATE TABLE public.programs (
-  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  user_id integer NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  name text NOT NULL,
-  description text,
-  is_active boolean DEFAULT false,
-  created_at timestamp with time zone DEFAULT now()
-);
+-- PROGRAMS (The high-level container, e.g., "Summer Shred")
+create table public.programs (
+  id integer generated always as identity not null,
+  user_id integer not null,
+  name text not null,
+  description text null,
+  is_active boolean null default false,
+  created_at timestamp with time zone null default now(),
+  constraint programs_pkey primary key (id),
+  constraint programs_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
 
--- B. WORKOUT_TEMPLATES (The routine blueprint, e.g., "Leg Day")
-CREATE TABLE public.workout_templates (
-  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  program_id integer NOT NULL REFERENCES public.programs(id) ON DELETE CASCADE,
-  name text NOT NULL, 
-  day_order integer DEFAULT 1, -- e.g. 1 for Monday, 2 for Tuesday
-  notes text,
-  created_at timestamp with time zone DEFAULT now()
-);
+-- WORKOUT_TEMPLATES (The routine blueprint, e.g., "Leg Day")
+create table public.workout_templates (
+  id integer generated always as identity not null,
+  program_id integer not null,
+  name text not null,
+  day_order integer null default 1,
+  notes text null,
+  created_at timestamp with time zone null default now(),
+  constraint workout_templates_pkey primary key (id),
+  constraint workout_templates_program_id_fkey foreign KEY (program_id) references programs (id) on delete CASCADE
+) TABLESPACE pg_default;
 
--- C. TEMPLATE_EXERCISES (The recipe for the routine)
-CREATE TABLE public.template_exercises (
-  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  template_id integer NOT NULL REFERENCES public.workout_templates(id) ON DELETE CASCADE,
-  exercise_id integer NOT NULL REFERENCES public.exercises(id) ON DELETE CASCADE,
-  
-  target_sets integer DEFAULT 3,
-  target_reps text, -- e.g. "8-12"
-  target_weight_lb numeric, 
-  rest_seconds integer DEFAULT 60,
-  order_index integer DEFAULT 0 
-);
+-- TEMPLATE_EXERCISES (The recipe for the routine)
+create table public.template_exercises (
+  id integer generated always as identity not null,
+  template_id integer not null,
+  exercise_id integer not null,
+  target_sets integer null default 3,
+  target_reps text null,
+  target_weight_lb numeric null,
+  rest_seconds integer null default 60,
+  order_index integer null default 0,
+  constraint template_exercises_pkey primary key (id),
+  constraint template_exercises_exercise_id_fkey foreign KEY (exercise_id) references exercises (id) on delete CASCADE,
+  constraint template_exercises_template_id_fkey foreign KEY (template_id) references workout_templates (id) on delete CASCADE
+) TABLESPACE pg_default;
 
--- ==========================================
--- 3. CREATE "LOGGING" TABLES
--- ==========================================
+-- WORKOUT_SESSIONS (The specific instance of going to the gym)
+create table public.workout_sessions (
+  id integer generated always as identity not null,
+  user_id integer not null,
+  template_id integer null,
+  start_time timestamp with time zone null default now(),
+  end_time timestamp with time zone null,
+  status text null default 'in_progress'::text,
+  duration_min numeric null,
+  calories_burned integer null,
+  total_volume_lb numeric null,
+  notes text null,
+  constraint workout_sessions_pkey primary key (id),
+  constraint workout_sessions_template_id_fkey foreign KEY (template_id) references workout_templates (id) on delete set null,
+  constraint workout_sessions_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
 
--- D. WORKOUT_SESSIONS (The specific instance of going to the gym)
-CREATE TABLE public.workout_sessions (
-  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  user_id integer NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  template_id integer REFERENCES public.workout_templates(id) ON DELETE SET NULL, 
-  
-  start_time timestamp with time zone DEFAULT now(),
-  end_time timestamp with time zone,
-  status text DEFAULT 'in_progress', -- 'in_progress', 'completed'
-  
-  duration_min numeric,
-  calories_burned integer,
-  total_volume_lb numeric,
-  notes text
-);
-
--- E. WORKOUT_SETS (The actual work performed)
-CREATE TABLE public.workout_sets (
-  id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  session_id integer NOT NULL REFERENCES public.workout_sessions(id) ON DELETE CASCADE,
-  exercise_id integer NOT NULL REFERENCES public.exercises(id),
-  
-  set_number integer NOT NULL, -- e.g. 1, 2, 3
-  reps_completed integer,
-  weight_lb numeric,
-  rpe integer, -- Optional: Rate of Perceived Exertion (1-10)
-  is_warmup boolean DEFAULT false,
-  
-  created_at timestamp with time zone DEFAULT now()
-);
+-- WORKOUT_SETS (The actual work performed)
+create table public.workout_sets (
+  id integer generated always as identity not null,
+  session_id integer not null,
+  exercise_id integer not null,
+  set_number integer not null,
+  reps_completed integer null,
+  weight_lb numeric null,
+  rpe integer null,
+  is_warmup boolean null default false,
+  created_at timestamp with time zone null default now(),
+  constraint workout_sets_pkey primary key (id),
+  constraint workout_sets_exercise_id_fkey foreign KEY (exercise_id) references exercises (id),
+  constraint workout_sets_session_id_fkey foreign KEY (session_id) references workout_sessions (id) on delete CASCADE
+) TABLESPACE pg_default;
 
 create table public.challenges (
   id serial not null,
@@ -147,3 +155,30 @@ create table public.leaderboard (
   constraint leaderboard_pkey primary key (user_id),
   constraint leaderboard_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
 ) TABLESPACE pg_default;
+
+create table public.ai_conversations (
+  id serial not null,
+  user_id integer not null,
+  message text not null,
+  response text not null,
+  created_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  constraint ai_conversations_pkey primary key (id),
+  constraint fk_conversation_user foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_ai_conversations_user_id on public.ai_conversations using btree (user_id) TABLESPACE pg_default;
+
+create table public.ai_workout_plans (
+  id serial not null,
+  user_id integer not null,
+  goal character varying(100) null,
+  generated_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  workout_data jsonb not null,
+  was_completed boolean null default false,
+  feedback_rating integer null,
+  feedback_notes text null,
+  constraint ai_workout_plans_pkey primary key (id),
+  constraint fk_ai_plan_user foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_ai_workout_plans_user_id on public.ai_workout_plans using btree (user_id) TABLESPACE pg_default;
