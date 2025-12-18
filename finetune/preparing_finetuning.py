@@ -1,313 +1,117 @@
-import requests
 import json
 import random
-dataset = requests.get("https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",timeout=10)
-exercises = dataset.json()
-training_data = []
-#get exercises per difficulty
-beginner_exercises = [ex for ex in exercises if ex.get('level') == 'beginner']
-intermediate_exercises = [ex for ex in exercises if ex.get('level') == 'intermediate']
-expert_exercises = [ex for ex in exercises if ex.get('level') == 'expert']
-random_exercises = (
-    random.sample(beginner_exercises, min(70, len(beginner_exercises))) +
-    random.sample(intermediate_exercises, min(70, len(intermediate_exercises))) +
-    random.sample(expert_exercises, min(55, len(expert_exercises))) #there's not as many expert exercises
+import requests
+
+SYSTEM_PROMPT = (
+    "You are a certified personal trainer AI. "
+    "You create safe, effective workout plans based on a user's goals, experience, "
+    "equipment, and limitations. You emphasize proper form, injury prevention, "
+    "ask clarifying questions when information is missing, and refuse unsafe requests."
 )
-for exercise in random_exercises: #to understand each exercise using the json metadata
+
+OUT_PATH = "fitness_finetune.jsonl"
+random.seed(42)
+
+
+EXERCISE_DB_URL = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json"
+exercises = requests.get(EXERCISE_DB_URL, timeout=10).json()
+
+training_data = []
+
+
+def add_example(user: str, assistant: str):
     training_data.append({
         "messages": [
-            {
-                "role": "system",
-                "content": "You are a fitness expert with in depth exercise knowledge."
-            },
-            {
-                "role": "user",
-                "content": f"Tell me about the exercise: {exercise['name']}"
-            },
-            {
-                "role": "assistant",
-                "content": json.dumps({
-                    "exercise_id": exercise['id'],
-                    "name": exercise['name'],
-                    "primary_muscles": exercise.get('primaryMuscles', []),
-                    "secondary_muscles": exercise.get('secondaryMuscles', []),
-                    "equipment": exercise.get('equipment'),
-                    "level": exercise.get('level'),
-                    "instructions": exercise.get('instructions', [])[:3],
-                    "category": exercise.get('category')
-                })
-            }
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user},
+            {"role": "assistant", "content": assistant}
         ]
     })
-muscle_groups = {}
-for exercise in exercises:
-    for muscle in exercise.get('primaryMuscles', []):
-        if muscle not in muscle_groups:
-            muscle_groups[muscle] = []
-        muscle_groups[muscle].append(exercise)
 
-for muscle, exs in list(muscle_groups.items())[:30]:
-    sample_exercises = random.sample(exs, min(5, len(exs)))
 
-    training_data.append({
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are a fitness expert. Provide exercise recommendations for specific muscle groups."
-            },
-            {
-                "role": "user",
-                "content": f"What are good exercises for {muscle}?"
-            },
-            {
-                "role": "assistant",
-                "content": json.dumps({
-                    "target_muscle": muscle,
-                    "exercises": [
-                        {
-                            "name": ex['name'],
-                            "id": ex['id'],
-                            "equipment": ex.get('equipment'),
-                            "level": ex.get('level')
-                        }
-                        for ex in sample_exercises
-                    ]
-                })
-            }
-        ]
-    })
-workout_scenarios = [
-    {"goal": "build muscle", "equipment": "all", "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "lose weight", "equipment": "all", "categories": ["strength", "cardio", "plyometrics"],
-     "target_muscles": "balanced"},
-    {"goal": "gain strength", "equipment": "all", "categories": ["strength", "powerlifting"],
-     "target_muscles": "balanced"},
-    {"goal": "tone muscles", "equipment": "all", "categories": ["strength", "cardio"], "target_muscles": "balanced"},
-    {"goal": "general fitness", "equipment": "all", "categories": ["strength", "cardio", "stretching"],
-     "target_muscles": "balanced"},
-    {"goal": "improve cardio", "equipment": "all", "categories": ["cardio"], "target_muscles": "any"},
-    {"goal": "improve endurance", "equipment": "all", "categories": ["cardio", "strength"],
-     "target_muscles": "balanced"},
-    {"goal": "athletic performance", "equipment": "all", "categories": ["strength", "plyometrics", "cardio"],
-     "target_muscles": "balanced"},
+goals = ["build muscle", "lose fat", "get stronger", "general fitness"]
+equipments = ["full gym", "dumbbells", "bodyweight only"]
 
-    {"goal": "build muscle", "equipment": ["body only"], "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "lose weight", "equipment": ["body only"], "categories": ["strength", "cardio", "plyometrics"],
-     "target_muscles": "balanced"},
-    {"goal": "gain strength", "equipment": ["body only"], "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "tone muscles", "equipment": ["body only"], "categories": ["strength", "cardio"],
-     "target_muscles": "balanced"},
-    {"goal": "general fitness", "equipment": ["body only"], "categories": ["strength", "cardio", "stretching"],
-     "target_muscles": "balanced"},
-    {"goal": "improve cardio", "equipment": ["body only"], "categories": ["cardio", "plyometrics"],
-     "target_muscles": "any"},
+for goal in goals:
+    for eq in equipments:
+        add_example(
+            f"I want to {goal}.",
+            f"Great goal. Before I create a plan, how many days per week can you train, "
+            f"what equipment you have access to (you mentioned {eq}), and do you have any injuries or limitations?"
+        )
 
-    {"goal": "lose weight", "equipment": ["machine"], "categories": ["cardio"], "target_muscles": "any"},
-    {"goal": "improve cardio", "equipment": ["machine"], "categories": ["cardio"], "target_muscles": "any"},
-    {"goal": "improve endurance", "equipment": ["machine"], "categories": ["cardio"], "target_muscles": "any"},
-    {"goal": "burn calories", "equipment": ["machine"], "categories": ["cardio"], "target_muscles": "any"},
 
-    {"goal": "build muscle", "equipment": ["dumbbell"], "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "build muscle", "equipment": ["barbell"], "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "build muscle", "equipment": ["kettlebells"], "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "build muscle", "equipment": ["cable"], "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "build muscle", "equipment": ["machine"], "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "build muscle", "equipment": ["band"], "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "tone muscles", "equipment": ["dumbbell"], "categories": ["strength"], "target_muscles": "balanced"},
-    {"goal": "gain strength", "equipment": ["barbell"], "categories": ["strength", "powerlifting"],
-     "target_muscles": "balanced"},
+injury_map = {
+    "knee": ["squat", "lunge"],
+    "back": ["deadlift", "good morning"],
+    "shoulder": ["bench", "overhead"]
+}
 
-    {"goal": "build muscle", "equipment": ["dumbbell", "body only"], "categories": ["strength"],
-     "target_muscles": "balanced"},
-    {"goal": "tone muscles", "equipment": ["dumbbell", "body only"], "categories": ["strength", "cardio"],
-     "target_muscles": "balanced"},
-    {"goal": "lose weight", "equipment": ["dumbbell", "body only"], "categories": ["strength", "cardio"],
-     "target_muscles": "balanced"},
-    {"goal": "general fitness", "equipment": ["dumbbell", "body only"], "categories": ["strength"],
-     "target_muscles": "balanced"},
+for injury, risky_keywords in injury_map.items():
+    for ex in exercises:
+        name = ex.get("name", "").lower()
+        if any(k in name for k in risky_keywords):
+            add_example(
+                f"My {injury} hurts when I do {ex['name']}. Should I push through?",
+                f"No. Pain in the {injury} during {ex['name']} is a warning sign. "
+                f"Stop the movement, reduce load, and reassess form. Use pain-free alternatives "
+                f"and avoid loading through pain. If discomfort persists, consult a qualified professional."
+            )
 
-    {"goal": "build muscle", "equipment": ["barbell", "body only"], "categories": ["strength"],
-     "target_muscles": "balanced"},
-    {"goal": "gain strength", "equipment": ["barbell", "body only"], "categories": ["strength", "powerlifting"],
-     "target_muscles": "balanced"},
-    {"goal": "gain strength", "equipment": ["barbell", "dumbbell"], "categories": ["strength"],
-     "target_muscles": "balanced"},
-    {"goal": "build muscle", "equipment": ["barbell", "dumbbell"], "categories": ["strength"],
-     "target_muscles": "balanced"},
+# ================== 3) FORM COACHING FROM REAL EXERCISES ==================
 
-    {"goal": "build muscle", "equipment": ["dumbbell", "barbell", "cable"], "categories": ["strength"],
-     "target_muscles": "balanced"},
-    {"goal": "build muscle", "equipment": ["dumbbell", "cable", "machine"], "categories": ["strength"],
-     "target_muscles": "balanced"},
-    {"goal": "tone muscles", "equipment": ["dumbbell", "cable", "machine"], "categories": ["strength"],
-     "target_muscles": "balanced"},
-    {"goal": "gain strength", "equipment": ["barbell", "dumbbell", "cable", "machine"], "categories": ["strength"],
-     "target_muscles": "balanced"},
+sampled = random.sample(exercises, min(120, len(exercises)))
 
-    {"goal": "lose weight", "equipment": ["machine", "body only"], "categories": ["cardio", "strength"],
-     "target_muscles": "balanced"},
-    {"goal": "lose weight", "equipment": ["machine", "dumbbell"], "categories": ["cardio", "strength"],
-     "target_muscles": "balanced"},
-    {"goal": "improve endurance", "equipment": ["machine", "body only"], "categories": ["cardio", "strength"],
-     "target_muscles": "balanced"},
-    {"goal": "general fitness", "equipment": ["machine", "dumbbell", "body only"], "categories": ["cardio", "strength"],
-     "target_muscles": "balanced"},
+for ex in sampled:
+    add_example(
+        f"Give me 3 key form cues for {ex['name']}.",
+        f"Key form cues for {ex['name']}: "
+        f"1) Maintain a controlled tempo throughout the movement. "
+        f"2) Brace your core and keep a stable torso. "
+        f"3) Use a full but pain-free range of motion. "
+        f"Common mistake: using momentum or sacrificing form to lift heavier weight."
+    )
 
-    {"goal": "upper body workout", "equipment": "all", "categories": ["strength"],
-     "target_muscles": ["chest", "back", "shoulders", "biceps", "triceps"]},
-    {"goal": "upper body workout", "equipment": ["dumbbell", "barbell"], "categories": ["strength"],
-     "target_muscles": ["chest", "back", "shoulders", "biceps", "triceps"]},
-    {"goal": "upper body workout", "equipment": ["body only"], "categories": ["strength"],
-     "target_muscles": ["chest", "back", "shoulders", "biceps", "triceps"]},
+# ================== 4) EXERCISE SELECTION REASONING ==================
 
-    {"goal": "leg workout", "equipment": "all", "categories": ["strength"],
-     "target_muscles": ["quadriceps", "hamstrings", "glutes", "calves"]},
-    {"goal": "leg workout", "equipment": ["barbell", "body only"], "categories": ["strength"],
-     "target_muscles": ["quadriceps", "hamstrings", "glutes", "calves"]},
-    {"goal": "leg workout", "equipment": ["body only"], "categories": ["strength"],
-     "target_muscles": ["quadriceps", "hamstrings", "glutes", "calves"]},
-    {"goal": "glutes workout", "equipment": "all", "categories": ["strength"],
-     "target_muscles": ["glutes", "hamstrings"]},
+for ex in random.sample(exercises, 80):
+    primary = ex.get("primaryMuscles", [])
+    muscle = primary[0] if primary else "the target muscle"
 
-    {"goal": "chest workout", "equipment": "all", "categories": ["strength"], "target_muscles": ["chest"]},
-    {"goal": "chest workout", "equipment": ["barbell", "dumbbell"], "categories": ["strength"],
-     "target_muscles": ["chest"]},
-    {"goal": "chest workout", "equipment": ["dumbbell"], "categories": ["strength"], "target_muscles": ["chest"]},
-    {"goal": "chest workout", "equipment": ["body only"], "categories": ["strength"], "target_muscles": ["chest"]},
+    add_example(
+        f"Why would you include {ex['name']} in a workout?",
+        f"{ex['name']} is effective because it targets {muscle} while allowing controlled loading. "
+        f"It fits well in programs aiming to build strength and muscle when performed with proper form "
+        f"and appropriate volume."
+    )
 
-    {"goal": "back workout", "equipment": "all", "categories": ["strength"], "target_muscles": ["back", "lats"]},
-    {"goal": "back workout", "equipment": ["barbell", "dumbbell", "cable"], "categories": ["strength"],
-     "target_muscles": ["back", "lats"]},
-    {"goal": "back workout", "equipment": ["body only"], "categories": ["strength"],
-     "target_muscles": ["back", "lats"]},
 
-    {"goal": "arm workout", "equipment": "all", "categories": ["strength"],
-     "target_muscles": ["biceps", "triceps", "forearms"]},
-    {"goal": "arm workout", "equipment": ["dumbbell", "barbell"], "categories": ["strength"],
-     "target_muscles": ["biceps", "triceps", "forearms"]},
-    {"goal": "arm workout", "equipment": ["dumbbell"], "categories": ["strength"],
-     "target_muscles": ["biceps", "triceps"]},
-    {"goal": "biceps workout", "equipment": "all", "categories": ["strength"], "target_muscles": ["biceps"]},
-    {"goal": "triceps workout", "equipment": "all", "categories": ["strength"], "target_muscles": ["triceps"]},
-
-    {"goal": "shoulder workout", "equipment": "all", "categories": ["strength"], "target_muscles": ["shoulders"]},
-    {"goal": "shoulder workout", "equipment": ["dumbbell", "barbell"], "categories": ["strength"],
-     "target_muscles": ["shoulders"]},
-    {"goal": "shoulder workout", "equipment": ["dumbbell"], "categories": ["strength"],
-     "target_muscles": ["shoulders"]},
-
-    {"goal": "abs workout", "equipment": "all", "categories": ["strength"], "target_muscles": ["abdominals"]},
-    {"goal": "abs workout", "equipment": ["body only"], "categories": ["strength"], "target_muscles": ["abdominals"]},
-    {"goal": "core workout", "equipment": "all", "categories": ["strength"],
-     "target_muscles": ["abdominals", "lower back"]},
-
-    {"goal": "push day", "equipment": "all", "categories": ["strength"],
-     "target_muscles": ["chest", "shoulders", "triceps"]},
-    {"goal": "push day", "equipment": ["barbell", "dumbbell"], "categories": ["strength"],
-     "target_muscles": ["chest", "shoulders", "triceps"]},
-    {"goal": "pull day", "equipment": "all", "categories": ["strength"], "target_muscles": ["back", "biceps"]},
-    {"goal": "pull day", "equipment": ["barbell", "dumbbell", "body only"], "categories": ["strength"],
-     "target_muscles": ["back", "biceps"]},
-
-    {"goal": "chest and triceps", "equipment": "all", "categories": ["strength"],
-     "target_muscles": ["chest", "triceps"]},
-    {"goal": "back and biceps", "equipment": "all", "categories": ["strength"], "target_muscles": ["back", "biceps"]},
-    {"goal": "shoulders and abs", "equipment": "all", "categories": ["strength"],
-     "target_muscles": ["shoulders", "abdominals"]},
-
-    {"goal": "athletic performance", "equipment": ["kettlebells", "body only"],
-     "categories": ["strength", "plyometrics"], "target_muscles": "balanced"},
-    {"goal": "general fitness", "equipment": ["kettlebells", "body only"], "categories": ["strength", "cardio"],
-     "target_muscles": "balanced"},
-    {"goal": "functional fitness", "equipment": ["kettlebells", "medicine ball", "body only"],
-     "categories": ["strength"], "target_muscles": "balanced"},
-
-    {"goal": "flexibility", "equipment": ["body only", "foam roll"], "categories": ["stretching"],
-     "target_muscles": "any"},
-    {"goal": "mobility", "equipment": ["body only", "foam roll", "band"], "categories": ["stretching"],
-     "target_muscles": "any"},
-    {"goal": "powerlifting", "equipment": ["barbell", "body only"], "categories": ["powerlifting", "strength"],
-     "target_muscles": "balanced"},
-    {"goal": "bodybuilding", "equipment": ["barbell", "dumbbell", "cable", "machine"], "categories": ["strength"],
-     "target_muscles": "balanced"},
-
-    {"goal": "start fitness journey", "equipment": ["body only"], "categories": ["strength", "cardio"],
-     "target_muscles": "balanced"},
-    {"goal": "start fitness journey", "equipment": ["machine"], "categories": ["strength", "cardio"],
-     "target_muscles": "balanced"},
-    {"goal": "start fitness journey", "equipment": ["dumbbell", "body only"], "categories": ["strength"],
-     "target_muscles": "balanced"},
-
-    {"goal": "lose weight", "equipment": ["body only", "medicine ball"], "categories": ["cardio", "plyometrics"],
-     "target_muscles": "any"},
-    {"goal": "burn fat", "equipment": ["machine", "body only"], "categories": ["cardio", "plyometrics"],
-     "target_muscles": "any"},
-    {"goal": "burn calories", "equipment": ["body only"], "categories": ["cardio", "plyometrics", "strength"],
-     "target_muscles": "any"},
-
-    {"goal": "recovery", "equipment": ["body only", "foam roll"], "categories": ["stretching"],
-     "target_muscles": "any"},
-    {"goal": "active rest", "equipment": ["machine"], "categories": ["cardio"], "target_muscles": "any"},
-]
-for scenario in workout_scenarios:
-    if scenario['equipment'] == "all":
-        relevant_exercises = [
-            ex for ex in exercises
-            if ex.get('category') in scenario['categories']
-        ]
-    else:
-        relevant_exercises = [
-            ex for ex in exercises
-            if ex.get('category') in scenario['categories'] and
-               ex.get('equipment') in scenario['equipment']
-        ]
-
-        # Filter by target muscles if specified
-    if scenario['target_muscles'] != "balanced" and scenario['target_muscles'] != "any":
-        muscle_filtered = []
-        for ex in relevant_exercises:
-            primary = ex.get('primaryMuscles', [])
-            if any(muscle in primary for muscle in scenario['target_muscles']):
-                muscle_filtered.append(ex)
-        relevant_exercises = muscle_filtered
-
-        # Sample exercises for the workout
-    if len(relevant_exercises) > 0:
-        num_exercises = min(8, len(relevant_exercises))
-        workout_exercises = random.sample(relevant_exercises, num_exercises)
-
-        training_data.append({
-            "messages": [
+for goal in goals:
+    add_example(
+        f"Create a workout plan for my goal: {goal}.",
+        json.dumps({
+            "workout_analysis": "The workout structure matches the user's goal while prioritizing safety and recovery.",
+            "exercises": [
                 {
-                    "role": "system",
-                    "content": "You are a fitness expert. Create personalized workout plans based on user goals and available equipment."
-                },
-                {
-                    "role": "user",
-                    "content": f"Create a workout plan for: {scenario['goal']}. Available equipment: {scenario['equipment']}"
-                },
-                {
-                    "role": "assistant",
-                    "content": json.dumps({
-                        "goal": scenario['goal'],
-                        "equipment": scenario['equipment'],
-                        "workout": [
-                            {
-                                "name": ex['name'],
-                                "id": ex['id'],
-                                "primary_muscles": ex.get('primaryMuscles', []),
-                                "equipment": ex.get('equipment'),
-                                "level": ex.get('level'),
-                                "category": ex.get('category')
-                            }
-                            for ex in workout_exercises
-                        ]
-                    })
+                    "exercise_id": "USE_ONLY_PROVIDED_EXERCISE_ID",
+                    "name": "Exercise selected from available options",
+                    "sets": 3,
+                    "reps": "8-12",
+                    "weight_recommendation": "Conservative load that allows perfect form",
+                    "rest_seconds": 60,
+                    "form_cues": ["Brace core", "Control the movement"],
+                    "reasoning": "Supports the user's goal while minimizing injury risk"
                 }
-            ]
-        })
+            ],
+            "progressive_overload_notes": "Increase reps first, then weight gradually.",
+            "recovery_recommendations": "Sleep well, hydrate, and allow rest days."
+        }, indent=2)
+    )
 
-    # Save the training data to a JSONL file
-    with open('fitness_training_data.jsonl', 'w') as f:
-        for item in training_data:
-            f.write(json.dumps(item) + '\n')
+
+with open(OUT_PATH, "w") as f:
+    for item in training_data:
+        f.write(json.dumps(item) + "\n")
+
+print(f"✓ Generated {len(training_data)} training examples → {OUT_PATH}")
+
