@@ -12,7 +12,7 @@ users_bp = Blueprint('users', __name__)
 # GET all users
 @users_bp.route('/', methods=['GET'])
 @token_required
-def get_all_users():
+def get_all_users(user_id=None):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
