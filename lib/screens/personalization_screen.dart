@@ -47,7 +47,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   final _healthInfoFormKey = GlobalKey<FormState>();
   final _planningFormKey = GlobalKey<FormState>();
 
-  UnitSystem _selectedUnitSystem = UnitSystem.metric;
+  UnitSystem _selectedUnitSystem = UnitSystem.imperial;
 
   final List<String> _promptTitles = [
     'Personal Info',
@@ -117,10 +117,12 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     // }
 
     // 4. Add the text fields
-    final dob = DateTime(_selectedBirthYear!, _selectedBirthMonth!, _selectedBirthDay!).toIso8601String();
+    // Format date as YYYY-MM-DD (matching database format)
+    final dateOfBirth = DateTime(_selectedBirthYear!, _selectedBirthMonth!, _selectedBirthDay!);
+    final dobString = '${dateOfBirth.year}-${dateOfBirth.month.toString().padLeft(2, '0')}-${dateOfBirth.day.toString().padLeft(2, '0')}';
 
     request.fields['name'] = _nameController.text;
-    request.fields['dob'] = dob;
+    request.fields['dob'] = dobString;
     request.fields['gender'] = _selectedGender!;
     request.fields['unit_system'] = _selectedUnitSystem.name; // 'metric' or 'imperial'
     request.fields['height'] = _heightController.text;
@@ -266,7 +268,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Month Dropdown
-              Expanded(
+              Flexible(
                 flex: 2,
                 child: _buildDropdown(
                   hint: 'Month',
@@ -277,7 +279,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
               ),
               const SizedBox(width: 12),
               // Day Dropdown
-              Expanded(
+              Flexible(
                 flex: 1,
                 child: _buildDropdown(
                   hint: 'Day',
@@ -288,12 +290,12 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
               ),
               const SizedBox(width: 12),
               // Year Dropdown
-              Expanded(
+              Flexible(
                 flex: 2,
                 child: _buildDropdown(
                   hint: 'Year',
                   value: _selectedBirthYear,
-                  items: List.generate(DateTime.now().year - 1899, (i) => DateTime.now().year - i),
+                  items: List.generate(88, (i) => DateTime.now().year - 13 - i), // Minimum age: 13, maximum age: 100
                   onChanged: (val) => setState(() => _selectedBirthYear = val),
                 ),
               ),
@@ -387,17 +389,19 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   }) {
     return DropdownButtonFormField<int>(
       initialValue: value,
-      hint: Text(hint, style: const TextStyle(color: Colors.white70)),
+      isExpanded: true,
       style: const TextStyle(color: Colors.white),
       dropdownColor: Colors.grey.shade800,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         filled: true,
-        fillColor: Color.fromARGB(150, 0, 0, 0),        
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-        errorBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
-        focusedErrorBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
+        fillColor: const Color.fromARGB(150, 0, 0, 0),
+        labelText: hint,
+        labelStyle: const TextStyle(color: Colors.white70),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+        errorBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
+        focusedErrorBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
       ),
       items: items.map((item) => DropdownMenuItem(value: item, child: Text(item.toString()))).toList(),
       onChanged: onChanged,
@@ -424,12 +428,12 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           SegmentedButton<UnitSystem>(
             segments: const <ButtonSegment<UnitSystem>>[
               ButtonSegment<UnitSystem>(
-                value: UnitSystem.metric,
-                label: Text('Metric (cm / kg)'),
-              ),
-              ButtonSegment<UnitSystem>(
                 value: UnitSystem.imperial,
                 label: Text('Imperial (in / lb)'),
+              ),
+              ButtonSegment<UnitSystem>(
+                value: UnitSystem.metric,
+                label: Text('Metric (cm / kg)'),
               ),
             ],
             selected: <UnitSystem>{_selectedUnitSystem},
@@ -663,75 +667,63 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
+      backgroundColor: const Color(0xFF0f0f1e),
       extendBodyBehindAppBar: true,
-      body: Stack(
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentPage = index;
+          });
+        },
         children: [
-          // Background image
-          SizedBox.expand(
-            child: Image.asset('assets/images/blur_bg_dark.png', fit: BoxFit.cover),
+          // Step 1: Personal Info
+          _buildStep(
+            title: 'Personal Info',
+            child: _buildPersonalInfoStep(),
           ),
 
-          // PageView for multi-step personalization
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            children: [
-              // Step 1: Personal Info
-              _buildStep(
-                title: 'Personal Info',
-                child: _buildPersonalInfoStep(),
-              ),
-
-              // Step 2: Health Info (placeholder for now)
-              _buildStep(
-                title: 'Health Info',
-                child: _buildHealthInfoStep(),
-              ),
-              _buildStep(
-                title: 'Planning',
-                child: _buildPlanningInfoStep(),
-              ),
-            ],
+          // Step 2: Health Info (placeholder for now)
+          _buildStep(
+            title: 'Health Info',
+            child: _buildHealthInfoStep(),
           ),
-
-          // Navigation buttons
-          Positioned(
-            bottom: 50,
-            left: 24,
-            right: 24,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_currentPage > 0)
-                  TextButton(
-                    onPressed: () {
-                      _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.ease,
-                      );
-                    },
-                    child: const Text(
-                      'Back',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  )
-                else
-                  const SizedBox(),
-                ElevatedButton(
-                  onPressed: _goToNextPage, // Updated button to use validation
-                  child: Text(
-                    _currentPage < _promptTitles.length - 1 ? 'Next' : 'Finish',
-                  ),
-                ),
-              ],
-            ),
+          _buildStep(
+            title: 'Planning',
+            child: _buildPlanningInfoStep(),
           ),
         ],
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 50.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (_currentPage > 0)
+              TextButton(
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.ease,
+                  );
+                },
+                child: const Text(
+                  'Back',
+                  style: TextStyle(color: Colors.white),
+                ),
+              )
+            else
+              const SizedBox(),
+            ElevatedButton(
+              onPressed: _goToNextPage,
+              child: Text(
+                _currentPage < _promptTitles.length - 1 ? 'Next' : 'Finish',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
