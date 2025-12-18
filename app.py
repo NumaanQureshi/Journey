@@ -6,6 +6,7 @@ from api.auth import auth_bp
 from api.challenges import challenge_bp
 from api.users import users_bp
 from api.ai import ai_bp
+from api.workouts import workouts_bp
 
 def create_app():
     load_dotenv()
@@ -23,8 +24,9 @@ def create_app():
     # blueprint registry
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(challenge_bp, url_prefix='/api/challenges')
-    app.register_blueprint(users_bp, url_prefix='/api/users') # Note the /users prefix
+    app.register_blueprint(users_bp, url_prefix='/api/users')
     app.register_blueprint(ai_bp, url_prefix='/api/ai')
+    app.register_blueprint(workouts_bp, url_prefix='/api/workouts')
 
     # test routes
     @app.route('/')
