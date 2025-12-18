@@ -1,7 +1,7 @@
 SELECT 
     u.id,
     u.email,
-    p.age,
+    p.date_of_birth,
     p.gender,
     p.height_in,
     p.weight_lb,

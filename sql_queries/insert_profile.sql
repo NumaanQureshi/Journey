@@ -1,7 +1,7 @@
 INSERT INTO profiles (
         user_id,
         name,
-        age,
+        date_of_birth,
         gender,
         height_in,
         weight_lb,

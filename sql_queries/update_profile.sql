@@ -1,6 +1,6 @@
 UPDATE profiles
 SET name = COALESCE(%s, name),
-    age = COALESCE(%s, age),
+    date_of_birth = COALESCE(%s, date_of_birth),
     gender = COALESCE(%s, gender),
     height_in = COALESCE(%s, height_in),
     weight_lb = COALESCE(%s, weight_lb),

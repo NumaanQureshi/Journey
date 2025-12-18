@@ -3,7 +3,7 @@ SELECT u.id,
     u.password_hash,
     u.username,
     u.created_at,
-    p.age,
+    p.date_of_birth,
     p.gender,
     p.height_in,
     p.weight_lb
