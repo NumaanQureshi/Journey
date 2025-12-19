@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:journey_application/screens/settings/information_settings.dart';
+import 'package:journey_application/screens/settings/general_settings.dart';
+import 'package:journey_application/screens/settings/account_settings.dart';
 // import 'settings/account_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -34,17 +36,31 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           _buildSectionHeader('General'),
-          // TODO: Add "Fitness Settings", 'AI Settings', and "Notifications"
+          ListTile(
+            leading: const Icon(Icons.settings, color: Colors.white70),
+            title: const Text('General Settings', style: TextStyle(color: Colors.white)),
+            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const GeneralSettingsPage()),
+              );
+            },
+          ),
 
           _buildSectionHeader('Account'),
           ListTile(
             leading: const Icon(Icons.person_outline, color: Colors.white70),
             title: const Text('Account Settings', style: TextStyle(color: Colors.white)),
             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AccountSettingsScreen()),
+              );
+            },
           ),
 
-          // ---------------------- UPDATED INFORMATION SECTION ----------------------
           _buildSectionHeader('Information'),
           ListTile(
             leading: const Icon(Icons.info_outline, color: Colors.white70),
