@@ -12,6 +12,13 @@ class SideMenu extends StatelessWidget {
 
   const SideMenu({super.key, this.currentScreen});
 
+  void _notImplemented(BuildContext context) {
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Not implemented')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -33,18 +40,19 @@ class SideMenu extends StatelessWidget {
                           child: Icon(
                             Icons.person,
                             size: 32,
-                            color: Colors.white,
+                            color: Colors.white
                           ),
                         ),
                         const SizedBox(height: 16),
                         Consumer<UserProvider>(
                           builder: (context, userProvider, _) {
-                            final displayName =
-                                userProvider.displayName ?? 'User';
+                            final displayName = userProvider.displayName ?? 'User';
                             return Text(
                               displayName,
                               style: const TextStyle(
-                                  color: Colors.white, fontSize: 18),
+                                color: Colors.white,
+                                fontSize: 18
+                              ),
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -53,15 +61,15 @@ class SideMenu extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
+                  )
                 ),
-
-                // HOME
                 ListTile(
                   leading: const Icon(Icons.home, color: Colors.blue),
                   title: const Text(
                     'Home',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
                   ),
                   selected: currentScreen == 'Home',
                   selectedTileColor: Colors.grey.withValues(alpha: 0.3),
@@ -69,20 +77,18 @@ class SideMenu extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     if (currentScreen != 'Home') {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
-                      );
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => const HomeScreen()));
                     }
                   },
                 ),
-
-                // WORKOUT
                 ListTile(
                   leading: const Icon(Icons.fitness_center, color: Colors.red),
                   title: const Text(
                     'Workout',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
                   ),
                   selected: currentScreen == 'Workout',
                   selectedTileColor: Colors.grey.withValues(alpha: 0.3),
@@ -90,20 +96,18 @@ class SideMenu extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     if (currentScreen != 'Workout') {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const Workout()),
-                      );
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => const Workout()));
                     }
                   },
                 ),
-
-                // CHALLENGES
                 ListTile(
                   leading: const Icon(Icons.emoji_events, color: Colors.amber),
                   title: const Text(
                     'Challenges',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
                   ),
                   selected: currentScreen == 'Challenges',
                   selectedTileColor: Colors.grey.withValues(alpha: 0.3),
@@ -111,20 +115,31 @@ class SideMenu extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     if (currentScreen != 'Challenges') {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const Challenges()),
-                      );
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => const Challenges()));
                     }
                   },
                 ),
-
-                // ANALYTICS
+                ListTile(
+                  leading: const Icon(Icons.leaderboard, color: Colors.green),
+                  title: const Text(
+                    'Leaderboard',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                  tileColor: Colors.transparent,
+                  selectedTileColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  onTap: () => _notImplemented(context),
+                ),
                 ListTile(
                   leading: const Icon(Icons.analytics, color: Colors.purpleAccent),
                   title: const Text(
                     'Analytics',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
                   ),
                   selected: currentScreen == 'Analytics',
                   selectedTileColor: Colors.grey.withValues(alpha: 0.3),
@@ -132,18 +147,12 @@ class SideMenu extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     if (currentScreen != 'Analytics') {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const UserAnalyticsScreen()),
-                      );
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => const UserAnalyticsScreen()));
                     }
                   },
                 ),
-
                 const Spacer(),
-
-                // SETTINGS BUTTON
                 Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: TextButton.icon(
@@ -153,13 +162,8 @@ class SideMenu extends StatelessWidget {
                       minimumSize: const Size.fromHeight(48),
                     ),
                     onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SettingsScreen(),
-                        ),
-                      );
+                      Navigator.pop(context); 
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
                     },
                     icon: const Icon(Icons.settings),
                     label: const Text('Settings'),
@@ -168,7 +172,7 @@ class SideMenu extends StatelessWidget {
               ],
             ),
           ),
-        ],
+        ]
       ),
     );
   }
