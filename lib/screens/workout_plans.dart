@@ -98,17 +98,45 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Colors.white70),
             ),
-            trailing: IconButton(
-              icon: const Icon(Icons.edit, color: Colors.orangeAccent),
-              onPressed: () {
-                if (!isActive) {
-                  provider.setActiveProgram(program);
+            trailing: PopupMenuButton<String>(
+              color: const Color(0xFF2C2C2C),
+              onSelected: (value) {
+                if (value == 'edit') {
+                  _showEditProgramDialog(context, program);
+                } else if (value == 'delete') {
+                  _showDeleteConfirmationDialog(context, program, provider);
                 }
               },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, color: Colors.orangeAccent, size: 20),
+                      SizedBox(width: 12),
+                      Text('Edit', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red, size: 20),
+                      SizedBox(width: 12),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+              child: const Icon(Icons.more_vert, color: Colors.orangeAccent),
             ),
-            onTap: () {
+            onTap: () async {
               if (!isActive) {
                 provider.setActiveProgram(program);
+                // Load templates for this program
+                await provider.loadTemplatesForActiveProgram();
               }
             },
           ),
@@ -212,7 +240,40 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.expand_more, color: Colors.white70),
+            PopupMenuButton<String>(
+              color: const Color(0xFF2C2C2C),
+              onSelected: (value) {
+                if (value == 'edit') {
+                  _showEditTemplateDialog(context, template);
+                } else if (value == 'delete') {
+                  _showDeleteTemplateConfirmationDialog(context, template);
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, color: Colors.orangeAccent, size: 20),
+                      SizedBox(width: 12),
+                      Text('Edit', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red, size: 20),
+                      SizedBox(width: 12),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+              child: const Icon(Icons.more_vert, color: Colors.white70),
+            ),
           ],
         ),
         children: [
@@ -221,10 +282,32 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Exercises',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle, color: Colors.orangeAccent),
+                      onPressed: () => _showAddExerciseDialog(context, template),
+                      iconSize: 24,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 if (template.exercises.isEmpty)
-                  const Text(
-                    'No exercises added yet',
-                    style: TextStyle(color: Colors.white70),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12.0),
+                    child: Text(
+                      'No exercises added yet',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                   )
                 else
                   ListView.builder(
@@ -265,6 +348,19 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
                                   ),
                                 ],
                               ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.red, size: 20),
+                              onPressed: () => _showRemoveExerciseConfirmation(
+                                context,
+                                template,
+                                exercise,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                              padding: EdgeInsets.zero,
                             ),
                           ],
                         ),
@@ -388,6 +484,146 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
     );
   }
 
+  /// Show dialog to edit an existing program
+  void _showEditProgramDialog(BuildContext context, Program program) {
+    final nameController = TextEditingController(text: program.name);
+    final descriptionController = TextEditingController(text: program.description ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Edit Program',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Program name',
+                hintStyle: const TextStyle(color: Colors.white70),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white70),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descriptionController,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Description (optional)',
+                hintStyle: const TextStyle(color: Colors.white70),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white70),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent,
+            ),
+            onPressed: () async {
+              try {
+                await WorkoutService.updateProgram(
+                  programId: program.id,
+                  name: nameController.text,
+                  description: descriptionController.text,
+                );
+                if (mounted) {
+                  context.read<WorkoutProvider>().loadPrograms();
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Program updated successfully')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Update', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show delete confirmation dialog
+  void _showDeleteConfirmationDialog(
+    BuildContext context,
+    Program program,
+    WorkoutProvider provider,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Delete Program?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${program.name}"? This action cannot be undone.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () async {
+              try {
+                final success = await provider.deleteProgram(program.id);
+                if (mounted) {
+                  Navigator.pop(context);
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Program deleted successfully')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: ${provider.error}')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Show dialog to create a new template
   void _showCreateTemplateDialog(BuildContext context, WorkoutProvider provider) {
     final nameController = TextEditingController();
@@ -441,12 +677,32 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orangeAccent,
             ),
-            onPressed: () {
-              provider.createTemplate(
-                name: nameController.text,
-                notes: notesController.text,
-              );
-              Navigator.pop(context);
+            onPressed: () async {
+              try {
+                final template = await provider.createTemplate(
+                  name: nameController.text,
+                  notes: notesController.text,
+                );
+                if (mounted) {
+                  Navigator.pop(context);
+                  if (template != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Workout day created successfully')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: ${provider.error}')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
             },
             child: const Text('Create', style: TextStyle(color: Colors.black)),
           ),
@@ -469,5 +725,338 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
         ),
       );
     }
+  }
+
+  /// Show dialog to edit a template
+  void _showEditTemplateDialog(BuildContext context, WorkoutTemplate template) {
+    final nameController = TextEditingController(text: template.name);
+    final notesController = TextEditingController(text: template.notes ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Edit Workout Day',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Workout day name',
+                hintStyle: const TextStyle(color: Colors.white70),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white70),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: notesController,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 2,
+              decoration: InputDecoration(
+                hintText: 'Notes (optional)',
+                hintStyle: const TextStyle(color: Colors.white70),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white70),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent,
+            ),
+            onPressed: () async {
+              try {
+                await WorkoutService.updateTemplate(
+                  templateId: template.id,
+                  name: nameController.text,
+                  notes: notesController.text,
+                  dayOrder: template.dayOrder,
+                );
+                if (mounted) {
+                  context.read<WorkoutProvider>().loadTemplatesForActiveProgram();
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Workout day updated successfully')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Update', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show delete confirmation for template
+  void _showDeleteTemplateConfirmationDialog(
+    BuildContext context,
+    WorkoutTemplate template,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Delete Workout Day?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${template.name}"? This action cannot be undone.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () async {
+              try {
+                await WorkoutService.deleteTemplate(templateId: template.id);
+                if (mounted) {
+                  Navigator.pop(context);
+                  context.read<WorkoutProvider>().loadTemplatesForActiveProgram();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Workout day deleted successfully')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show dialog to add an exercise to a template
+  void _showAddExerciseDialog(BuildContext context, WorkoutTemplate template) {
+    final provider = context.read<WorkoutProvider>();
+    final setsController = TextEditingController(text: '3');
+    final repsController = TextEditingController(text: '8-12');
+    final weightController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          int? selectedExerciseId;
+          return AlertDialog(
+            backgroundColor: const Color(0xFF2C2C2C),
+            title: const Text(
+              'Add Exercise',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: SingleChildScrollView(
+              child: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<int>(
+                      dropdownColor: const Color(0xFF2C2C2C),
+                      style: const TextStyle(color: Colors.white),
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        hintText: 'Select exercise',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: const OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.white70),
+                        ),
+                      ),
+                      items: provider.exercises.map((exercise) {
+                        return DropdownMenuItem<int>(
+                          value: exercise.id,
+                          child: Text(exercise.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedExerciseId = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: setsController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'Sets',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: const OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.white70),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: repsController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Reps (e.g., 8-12)',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: const OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.white70),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: weightController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'Target weight (lbs) - optional',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: const OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.white70),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                ),
+                onPressed: () async {
+                  if (selectedExerciseId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please select an exercise')),
+                    );
+                    return;
+                  }
+
+                  try {
+                    await WorkoutService.addExerciseToTemplate(
+                      templateId: template.id,
+                      exerciseId: selectedExerciseId!,
+                      targetSets: int.tryParse(setsController.text) ?? 3,
+                      targetReps: repsController.text.isEmpty ? null : repsController.text,
+                      targetWeightLb: double.tryParse(weightController.text),
+                    );
+                    if (mounted) {
+                      Navigator.pop(context);
+                      context.read<WorkoutProvider>().loadTemplatesForActiveProgram();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Exercise added successfully')),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Add', style: TextStyle(color: Colors.black)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// Show confirmation to remove exercise from template
+  void _showRemoveExerciseConfirmation(
+    BuildContext context,
+    WorkoutTemplate template,
+    TemplateExercise exercise,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Remove Exercise?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Remove "${exercise.exercise?.name ?? 'Unknown'}" from this workout?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () async {
+              try {
+                await WorkoutService.removeExerciseFromTemplate(
+                  templateId: template.id,
+                  templateExerciseId: exercise.id,
+                );
+                if (mounted) {
+                  Navigator.pop(context);
+                  context.read<WorkoutProvider>().loadTemplatesForActiveProgram();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Exercise removed successfully')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Remove', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 }
