@@ -71,6 +71,49 @@ class WorkoutProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Load templates for the active program
+  Future<void> loadTemplatesForActiveProgram() async {
+    if (activeProgram == null) {
+      error = 'No active program selected';
+      return;
+    }
+
+    try {
+      final templates = await WorkoutService.getTemplatesForProgram(activeProgram!.id);
+      // Update the active program with loaded templates
+      activeProgram = Program(
+        id: activeProgram!.id,
+        userId: activeProgram!.userId,
+        name: activeProgram!.name,
+        description: activeProgram!.description,
+        isActive: activeProgram!.isActive,
+        createdAt: activeProgram!.createdAt,
+        templates: templates,
+      );
+      notifyListeners();
+    } catch (e) {
+      error = e.toString();
+      debugPrint('Error loading templates: $e');
+    }
+  }
+
+  /// Delete a program
+  Future<bool> deleteProgram(int programId) async {
+    try {
+      await WorkoutService.deleteProgram(programId: programId);
+      programs.removeWhere((p) => p.id == programId);
+      if (activeProgram?.id == programId) {
+        activeProgram = null;
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      debugPrint('Error deleting program: $e');
+      return false;
+    }
+  }
+
   /// Create a new template for the active program
   Future<WorkoutTemplate?> createTemplate({
     required String name,
@@ -89,8 +132,8 @@ class WorkoutProvider extends ChangeNotifier {
         dayOrder: dayOrder,
         notes: notes,
       );
-      // Update the active program with new template
-      await loadPrograms();
+      // Load templates for the active program to refresh the UI
+      await loadTemplatesForActiveProgram();
       return template;
     } catch (e) {
       error = e.toString();
