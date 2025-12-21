@@ -29,14 +29,53 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
-  /// Load all available exercises
+  /// Load all available exercises with pagination
+  /// Fetches exercises in batches of 100 to handle large datasets
   Future<void> loadExercises() async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    
     try {
-      exercises = await WorkoutService.getExercises();
+      exercises = [];
+      int offset = 0;
+      const int batchSize = 100;  // Reduced from 500 to avoid large response issues
+      bool hasMore = true;
+
+      while (hasMore) {
+        debugPrint('DEBUG: Fetching batch at offset $offset');
+        final batch = await WorkoutService.getExercises(
+          limit: batchSize,
+          offset: offset,
+        );
+
+        debugPrint('DEBUG: Got batch with ${batch.length} exercises');
+        
+        if (batch.isEmpty) {
+          hasMore = false;
+        } else {
+          exercises.addAll(batch);
+          offset += batchSize;
+          // If we got fewer items than the batch size, we've reached the end
+          if (batch.length < batchSize) {
+            hasMore = false;
+          }
+          // Add a longer delay between requests to let server close connections properly
+          if (hasMore) {
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+        }
+      }
+
+      debugPrint('Loaded ${exercises.length} exercises total');
       notifyListeners();
     } catch (e) {
       error = e.toString();
       debugPrint('Error loading exercises: $e');
+      notifyListeners();
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
   }
 
