@@ -3,6 +3,7 @@ import psycopg2
 import bcrypt
 import jwt                      # Encode / Decode
 import datetime
+from helper_functions import convert_dict_dates_to_iso8601
 from utils.utilities import get_db_connection, token_required
 from utils.helper_functions import calculate_age, generate_reset_token
 from utils.sql_loader import load_sql_query
@@ -35,6 +36,7 @@ def register():
         conn = get_db_connection()
         cur = conn.cursor()
         insert_user_sql = load_sql_query('insert_user_core.sql')
+        print(f"DEBUG: SQL Query: {insert_user_sql}")
         cur.execute(insert_user_sql,
             (
                 user_login_info['email'].lower(),
@@ -42,8 +44,16 @@ def register():
                 user_login_info['username']
             )
         )
-        user_id = cur.fetchone()[0]
+        result = cur.fetchone()
+        print(f"DEBUG: fetchone() result: {result}")
+        if result is None:
+            print("DEBUG: ERROR - fetchone() returned None!")
+            raise Exception("Failed to retrieve user_id from insert")
+        user_id = result[0]
+        print(f"DEBUG: Successfully retrieved user_id: {user_id}")
+        
         insert_profile_sql = load_sql_query('insert_profile.sql')
+        print(f"DEBUG: About to insert profile...")
         cur.execute(
             insert_profile_sql,
             (
@@ -54,20 +64,25 @@ def register():
                 user_login_info.get('weight_lb')
             )
         )
+        print(f"DEBUG: Profile inserted successfully")
+        
         insert_leaderboard_sql = load_sql_query('insert_leaderboard.sql')
+        print(f"DEBUG: About to insert leaderboard...")
         cur.execute(
             insert_leaderboard_sql, 
             (user_id,)
              # all other aspects of the leaderboard are defaulted to 0
         )
-        insert_challenges_sql = load_sql_query('insert_challenge.sql')
-        cur.execute(
-            insert_challenges_sql, 
-            (user_id,)
-             # all other aspects of the leaderboard are defaulted to null or 0
-        )
+        print(f"DEBUG: Leaderboard inserted successfully")
+        
+        print(f"DEBUG: About to ensure current challenges...")
         # initialize user challenges
-        _ensure_current_challenges(user_id, cur)
+        try:
+            _ensure_current_challenges(user_id, cur)
+            print(f"DEBUG: Current challenges ensured successfully")
+        except Exception as e:
+            print(f"DEBUG: Error ensuring current challenges: {e}")
+            raise
 
         conn.commit()
         

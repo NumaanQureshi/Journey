@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
+from helper_functions import convert_dict_dates_to_iso8601
 
 # Assuming these are now in your helper_functions or a new utils file
 # (Adjust import paths based on your actual file locations)
@@ -46,7 +47,7 @@ def get_user_challenges(user_id):
 
         return jsonify({
             'success': True,
-            'challenges': challenges
+            'challenges': convert_dict_dates_to_iso8601(challenges)
         }), 200
 
     except Exception as e:

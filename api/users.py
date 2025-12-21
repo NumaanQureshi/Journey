@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 from functools import wraps
+from helper_functions import convert_dict_dates_to_iso8601
 
 # Assuming these are now in your helper_functions or a new utils file
 from utils.utilities import token_required, get_db_connection
@@ -23,7 +24,7 @@ def get_all_users(user_id=None):
         users = cur.fetchall()
         cur.close()
         conn.close()
-        return jsonify({"success": True, "users": users})
+        return jsonify({"success": True, "users": convert_dict_dates_to_iso8601(users)})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -40,7 +41,7 @@ def get_user(user_id):
         cur.close()
         conn.close()
         if user:
-            return jsonify({"success": True, "user": user})
+            return jsonify({"success": True, "user": convert_dict_dates_to_iso8601(user)})
         else:
             return jsonify({"success": False, "error": "User not found"}), 404
     except Exception as e:
@@ -59,7 +60,7 @@ def get_current_user(user_id):
         cur.close()
         conn.close()
         if profile:
-            return jsonify({"success": True, "profile": profile})
+            return jsonify({"success": True, "profile": convert_dict_dates_to_iso8601(profile)})
         else:
             return jsonify({"success": False, "error": "User not found"}), 404
     except Exception as e:
@@ -160,22 +161,24 @@ def update_current_user(user_id):
                 'error': 'User not found'
             }), 404
 
+        user_dict = {
+            'id': user[0],
+            'email': user[1],
+            'date_of_birth': user[2],
+            'gender': user[3],
+            'height_in': user[4],
+            'weight_lb': user[5],
+            'updated_at': user[6],
+            'name': user[7] if len(user) > 7 else None,
+            'goal_weight_lb': user[8] if len(user) > 8 else None,
+            'main_focus': user[9] if len(user) > 9 else None,
+            'activity_intensity': user[10] if len(user) > 10 else None,
+        }
+
         return jsonify({
             'success': True,
             'message': 'Profile updated successfully',
-            'user': {
-                'id': user[0],
-                'email': user[1],
-                'date_of_birth': user[2],
-                'gender': user[3],
-                'height_in': user[4],
-                'weight_lb': user[5],
-                'updated_at': str(user[6]),
-                'name': user[7] if len(user) > 7 else None,
-                'goal_weight_lb': user[8] if len(user) > 8 else None,
-                'main_focus': user[9] if len(user) > 9 else None,
-                'activity_intensity': user[10] if len(user) > 10 else None,
-            }
+            'user': convert_dict_dates_to_iso8601(user_dict)
         }), 200
 
     except Exception as e:

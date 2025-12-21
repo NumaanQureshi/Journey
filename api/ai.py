@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
+from helper_functions import convert_dict_dates_to_iso8601
 from utils.utilities import token_required, get_db_connection
 from utils.helper_functions import calculate_age
 from services.ai_service import (
@@ -80,7 +81,7 @@ def generate_personalized_workout(user_id):
             conn.commit()
             result['plan_id'] = plan_id
 
-        return jsonify(result), 200 if result['success'] else 500
+        return jsonify(convert_dict_dates_to_iso8601(result)), 200 if result['success'] else 500
 
     except Exception as e:
         if conn:
@@ -116,7 +117,7 @@ def analyze_completed_workout(user_id):
 
         result = fitness_ai_agent.analyze_workout_completion(user_data, data)
 
-        return jsonify(result), 200 if result['success'] else 500
+        return jsonify(convert_dict_dates_to_iso8601(result)), 200 if result['success'] else 500
 
     except Exception as e:
         if conn:
@@ -164,7 +165,7 @@ def chat_with_trainer(user_id):
             save_ai_conversation(user_id, data.get('message'), result['response'], cur)
             conn.commit()
 
-        return jsonify(result), 200 if result['success'] else 500
+        return jsonify(convert_dict_dates_to_iso8601(result)), 200 if result['success'] else 500
 
     except Exception as e:
         if conn:
@@ -200,7 +201,7 @@ def check_deload(user_id):
 
         result = fitness_ai_agent.suggest_deload_week(user_data)
 
-        return jsonify(result), 200 if result['success'] else 500
+        return jsonify(convert_dict_dates_to_iso8601(result)), 200 if result['success'] else 500
 
     except Exception as e:
         import traceback
