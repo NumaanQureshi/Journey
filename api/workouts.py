@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 from utils.utilities import token_required, get_db_connection
 from utils.sql_loader import load_sql_query
+from helper_functions import convert_dict_dates_to_iso8601
 import datetime
 
 workouts_bp = Blueprint('workouts', __name__)
@@ -16,7 +17,7 @@ def get_all_exercises():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        limit = request.args.get('limit', 50, type=int)
+        limit = request.args.get('limit', 500, type=int)
         offset = request.args.get('offset', 0, type=int)
         
         # Limit to reasonable pagination
@@ -29,7 +30,7 @@ def get_all_exercises():
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "exercises": exercises}), 200
+        return jsonify({"success": True, "exercises": convert_dict_dates_to_iso8601(exercises)}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -52,7 +53,7 @@ def get_exercise(exercise_id):
         if not exercise:
             return jsonify({"success": False, "error": "Exercise not found"}), 404
         
-        return jsonify({"success": True, "exercise": exercise}), 200
+        return jsonify({"success": True, "exercise": convert_dict_dates_to_iso8601(exercise)}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -75,7 +76,7 @@ def get_programs(user_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "programs": programs}), 200
+        return jsonify({"success": True, "programs": convert_dict_dates_to_iso8601(programs)}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -94,7 +95,7 @@ def create_program(user_id):
             return jsonify({"success": False, "error": "Program name is required"}), 400
         
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         
         sql_query = load_sql_query('insert_program.sql')
         cur.execute(sql_query, (user_id, name, description, False))
@@ -104,9 +105,94 @@ def create_program(user_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "program": dict(program)}), 201
+        return jsonify({"success": True, "program": convert_dict_dates_to_iso8601(program)}), 201
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# UPDATE a program
+@workouts_bp.route('/programs/<int:program_id>', methods=['PUT'])
+@token_required
+def update_program(user_id, program_id):
+    """Update an existing workout program."""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        description = data.get('description')
+        is_active = data.get('is_active')
+        
+        if not name:
+            return jsonify({"success": False, "error": "Program name is required"}), 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Verify user owns this program
+        sql_verify = load_sql_query('select_program_by_id.sql')
+        cur.execute(sql_verify, (program_id,))
+        program = cur.fetchone()
+        if not program or program['user_id'] != user_id:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+        
+        # Use existing values if not provided
+        name = name if name is not None else program['name']
+        description = description if description is not None else program['description']
+        is_active = is_active if is_active is not None else program['is_active']
+        
+        sql_query = load_sql_query('update_program.sql')
+        cur.execute(sql_query, (name, description, is_active, program_id))
+        
+        updated_program = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "program": convert_dict_dates_to_iso8601(updated_program)}), 200
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+# DELETE a program
+@workouts_bp.route('/programs/<int:program_id>', methods=['DELETE'])
+@token_required
+def delete_program(user_id, program_id):
+    """Delete a workout program."""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Verify user owns this program
+        sql_verify = load_sql_query('select_program_by_id.sql')
+        cur.execute(sql_verify, (program_id,))
+        program = cur.fetchone()
+        if not program or program['user_id'] != user_id:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+        
+        sql_query = load_sql_query('delete_program.sql')
+        cur.execute(sql_query, (program_id,))
+        
+        deleted_program = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "message": "Program deleted successfully", "program_id": deleted_program['id']}), 200
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 
 # GET workout templates for a program
@@ -132,7 +218,7 @@ def get_templates(user_id, program_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "templates": templates}), 200
+        return jsonify({"success": True, "templates": convert_dict_dates_to_iso8601(templates)}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -152,13 +238,13 @@ def create_template(user_id, program_id):
             return jsonify({"success": False, "error": "Template name is required"}), 400
         
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         
         # Verify user owns this program
         sql_verify = load_sql_query('select_program_by_id.sql')
         cur.execute(sql_verify, (program_id,))
         program = cur.fetchone()
-        if not program or program[0] != user_id:
+        if not program or program['user_id'] != user_id:
             return jsonify({"success": False, "error": "Unauthorized"}), 403
         
         sql_query = load_sql_query('insert_workout_template.sql')
@@ -169,9 +255,92 @@ def create_template(user_id, program_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "template": dict(template)}), 201
+        return jsonify({"success": True, "template": convert_dict_dates_to_iso8601(template)}), 201
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# UPDATE a workout template
+@workouts_bp.route('/templates/<int:template_id>', methods=['PUT'])
+@token_required
+def update_template(user_id, template_id):
+    """Update a workout template's name, notes, or day_order."""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        notes = data.get('notes')
+        day_order = data.get('day_order')
+        
+        if not name:
+            return jsonify({"success": False, "error": "Template name is required"}), 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Verify user owns this template via program ownership check
+        sql_verify = load_sql_query('verify_template_owner_by_id.sql')
+        cur.execute(sql_verify, (template_id,))
+        result = cur.fetchone()
+        if not result or result['user_id'] != user_id:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+        
+        # Get current template to use existing values if not provided
+        sql_get = load_sql_query('select_template_by_id.sql')
+        cur.execute(sql_get, (template_id,))
+        template = cur.fetchone()
+        
+        name = name if name is not None else template['name']
+        notes = notes if notes is not None else template['notes']
+        day_order = day_order if day_order is not None else template['day_order']
+        
+        sql_query = load_sql_query('update_workout_template.sql')
+        cur.execute(sql_query, (name, notes, day_order, template_id))
+        
+        updated_template = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "template": convert_dict_dates_to_iso8601(updated_template)}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# DELETE a workout template
+@workouts_bp.route('/templates/<int:template_id>', methods=['DELETE'])
+@token_required
+def delete_template(user_id, template_id):
+    """Delete a workout template."""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Verify user owns this template via program ownership check
+        sql_verify = load_sql_query('verify_template_owner_by_id.sql')
+        cur.execute(sql_verify, (template_id,))
+        result = cur.fetchone()
+        if not result or result['user_id'] != user_id:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+        
+        # Delete the template (cascading delete will remove template_exercises)
+        sql_query = load_sql_query('delete_workout_template.sql')
+        cur.execute(sql_query, (template_id,))
+        
+        deleted = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "message": "Template deleted successfully", "deleted_id": deleted['id']}), 200
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 
 # GET exercises in a template
@@ -197,7 +366,7 @@ def get_template_exercises(user_id, template_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "exercises": exercises}), 200
+        return jsonify({"success": True, "exercises": convert_dict_dates_to_iso8601(exercises)}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -220,13 +389,13 @@ def add_template_exercise(user_id, template_id):
             return jsonify({"success": False, "error": "exercise_id is required"}), 400
         
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         
         # Verify user owns this template
         sql_verify = load_sql_query('verify_template_owner_by_id.sql')
         cur.execute(sql_verify, (template_id,))
         result = cur.fetchone()
-        if not result or result[0] != user_id:
+        if not result or result['user_id'] != user_id:
             return jsonify({"success": False, "error": "Unauthorized"}), 403
         
         sql_query = load_sql_query('insert_template_exercise.sql')
@@ -237,9 +406,55 @@ def add_template_exercise(user_id, template_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "template_exercise": dict(template_exercise)}), 201
+        return jsonify({"success": True, "template_exercise": convert_dict_dates_to_iso8601(template_exercise)}), 201
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# REMOVE exercise from template
+@workouts_bp.route('/templates/<int:template_id>/exercises/<int:template_exercise_id>', methods=['DELETE'])
+@token_required
+def remove_template_exercise(user_id, template_id, template_exercise_id):
+    """Remove an exercise from a workout template."""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Verify user owns this template
+        sql_verify = load_sql_query('verify_template_owner_by_id.sql')
+        cur.execute(sql_verify, (template_id,))
+        result = cur.fetchone()
+        if not result or result['user_id'] != user_id:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+        
+        # Verify the template exercise belongs to this template
+        cur.execute("""
+            SELECT id FROM template_exercises 
+            WHERE id = %s AND template_id = %s
+        """, (template_exercise_id, template_id))
+        
+        if not cur.fetchone():
+            return jsonify({"success": False, "error": "Template exercise not found"}), 404
+        
+        # Delete the template exercise
+        sql_query = load_sql_query('delete_template_exercise.sql')
+        cur.execute(sql_query, (template_exercise_id,))
+        
+        deleted = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "message": "Exercise removed from template", "deleted_id": deleted['id']}), 200
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 
 # ===================== User Workout and Sessions =====================
@@ -322,7 +537,7 @@ def get_session(user_id, session_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "session": dict(session), "sets": sets}), 200
+        return jsonify({"success": True, "session": convert_dict_dates_to_iso8601(dict(session)), "sets": convert_dict_dates_to_iso8601(sets)}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -345,7 +560,7 @@ def get_sessions(user_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "sessions": sessions}), 200
+        return jsonify({"success": True, "sessions": convert_dict_dates_to_iso8601(sessions)}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -427,7 +642,7 @@ def update_set(user_id, set_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "set": dict(updated_set)}), 200
+        return jsonify({"success": True, "set": convert_dict_dates_to_iso8601(dict(updated_set))}), 200
     except Exception as e:
         if conn:
             conn.rollback()
@@ -488,7 +703,7 @@ def complete_session(user_id, session_id):
         
         return jsonify({
             "success": True, 
-            "session": dict(completed_session),
+            "session": convert_dict_dates_to_iso8601(dict(completed_session)),
             "stats": {
                 "total_volume_lb": total_volume,
                 "calories_burned": calories_burned,
