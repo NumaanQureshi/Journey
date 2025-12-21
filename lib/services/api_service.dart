@@ -1,6 +1,6 @@
 class ApiService {
   static String getBaseUrl() {
-    return 'http://10.0.2.2:5000/api';
+    return 'https://journey-backend-zqz7.onrender.com/api';
   }
 
   // You can add specific endpoint getters here if you like
