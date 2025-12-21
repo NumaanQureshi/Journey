@@ -47,7 +47,7 @@ class Profile {
     DateTime? parseDateOfBirth;
     if (json['date_of_birth'] != null) {
       try {
-        parseDateOfBirth = DateTime.parse(json['date_of_birth']);
+        parseDateOfBirth = _parseDate(json['date_of_birth']);
       } catch (e) {
         debugPrint('Error parsing date_of_birth: $e');
       }
@@ -65,6 +65,48 @@ class Profile {
       availableEquipment: json['available_equipment'],
       preferredWorkoutDays: json['preferred_workout_days'],
     );
+  }
+
+  /// Helper method to safely parse dates from various formats
+  static DateTime? _parseDate(dynamic dateValue) {
+    if (dateValue == null) return null;
+    
+    try {
+      final dateString = dateValue.toString().trim();
+      if (dateString.isEmpty) return null;
+      
+      // Try ISO 8601 format first
+      try {
+        return DateTime.parse(dateString);
+      } catch (_) {
+        // If that fails, try other common formats
+        // Handle HTTP date format: "Thu, 06 Apr 2000 00:00:00 GMT"
+        if (dateString.contains(',')) {
+          final parts = dateString.split(' ');
+          if (parts.length >= 4) {
+            final months = {
+              'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+              'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+            };
+            try {
+              final day = int.parse(parts[1]);
+              final month = months[parts[2]] ?? 1;
+              final year = int.parse(parts[3]);
+              final timeParts = parts[4].split(':');
+              final hour = int.parse(timeParts[0]);
+              final minute = int.parse(timeParts[1]);
+              final second = int.parse(timeParts[2]);
+              return DateTime.utc(year, month, day, hour, minute, second);
+            } catch (e) {
+              return null;
+            }
+          }
+        }
+        return null;
+      }
+    } catch (e) {
+      return null;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -274,7 +316,6 @@ class UserProvider extends ChangeNotifier {
 
       debugPrint('Attempting to fetch user profile from ${ApiService.me()}');
       debugPrint('API base URL: ${ApiService.getBaseUrl()}');
-      debugPrint('Token present: ${token != null}');
 
       final response = await http.get(
         Uri.parse(ApiService.me()),
