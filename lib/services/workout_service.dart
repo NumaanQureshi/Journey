@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'api_service.dart';
 import 'auth_service.dart';
@@ -8,12 +9,24 @@ class Exercise {
   final String name;
   final String? description;
   final String? category;
+  final String? force;
+  final String? level;
+  final String? mechanic;
+  final String? equipment;
+  final List<String>? primaryMuscles;
+  final List<String>? secondaryMuscles;
 
   Exercise({
     required this.id,
     required this.name,
     this.description,
     this.category,
+    this.force,
+    this.level,
+    this.mechanic,
+    this.equipment,
+    this.primaryMuscles,
+    this.secondaryMuscles,
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
@@ -22,6 +35,20 @@ class Exercise {
       name: json['name'],
       description: json['description'],
       category: json['category'],
+      force: json['force'],
+      level: json['level'],
+      mechanic: json['mechanic'],
+      equipment: json['equipment'],
+      primaryMuscles: json['primaryMuscles'] != null
+          ? List<String>.from(json['primaryMuscles'])
+          : json['primary_muscles'] != null
+              ? List<String>.from(json['primary_muscles'])
+              : null,
+      secondaryMuscles: json['secondaryMuscles'] != null
+          ? List<String>.from(json['secondaryMuscles'])
+          : json['secondary_muscles'] != null
+              ? List<String>.from(json['secondary_muscles'])
+              : null,
     );
   }
 }
@@ -727,22 +754,51 @@ class WorkoutService {
         },
       );
 
-      final response = await http.get(
-        uri,
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      debugPrint('DEBUG: Fetching exercises from $uri');
+      
+      // Retry logic for transient failures
+      int retries = 5;
+      Exception? lastException;
+      
+      while (retries > 0) {
+        try {
+          // Create a fresh client for each request to avoid connection reuse issues
+          final response = await http.get(
+            uri,
+            headers: {'Authorization': 'Bearer $token'},
+          ).timeout(
+            const Duration(seconds: 60),
+            onTimeout: () => throw Exception('Request timeout while loading exercises'),
+          );
 
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        if (body['success'] == true && body['exercises'] != null) {
-          final data = body['exercises'] as List;
-          return data.map((e) => Exercise.fromJson(e)).toList();
+          debugPrint('DEBUG: Response status: ${response.statusCode}');
+          debugPrint('DEBUG: Response body length: ${response.body.length}');
+
+          if (response.statusCode == 200) {
+            final body = jsonDecode(response.body) as Map<String, dynamic>;
+            if (body['success'] == true && body['exercises'] != null) {
+              final data = body['exercises'] as List;
+              debugPrint('DEBUG: Parsed ${data.length} exercises from response');
+              return data.map((e) => Exercise.fromJson(e)).toList();
+            }
+            throw Exception('Invalid response format');
+          } else {
+            throw Exception('Failed to load exercises: ${response.statusCode}');
+          }
+        } on Exception catch (e) {
+          lastException = e;
+          retries--;
+          if (retries > 0) {
+            debugPrint('DEBUG: Request failed, retrying... ($retries retries left)');
+            // Increase delay significantly - server may need time to clean up connections
+            await Future.delayed(const Duration(milliseconds: 1000));
+          }
         }
-        throw Exception('Invalid response format');
-      } else {
-        throw Exception('Failed to load exercises: ${response.statusCode}');
       }
+      
+      throw lastException ?? Exception('Failed to load exercises after retries');
     } catch (e) {
+      debugPrint('DEBUG: getExercises error: $e');
       rethrow;
     }
   }
