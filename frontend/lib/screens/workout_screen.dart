@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'side_menu.dart';
-import 'workout_session.dart';
 import 'workout_plans.dart';
 import 'dart:core';
 import 'dart:math' as math;
@@ -132,10 +131,10 @@ class _WorkoutContentState extends State<WorkoutContent>
       
       // Check if the animation completed (user held for full 2 seconds)
       if (_ringAnimation.value >= 1.0) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const WorkoutSession(),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a workout program and template to start'),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -253,7 +252,6 @@ class _WorkoutContentState extends State<WorkoutContent>
 class _WorkoutState extends State<Workout> {
   int _selectedIndex = 1;
 
-  // TODO: demo logic. add backend logic later
   int _streakLevel = 0; // 0: none, 1: small, 2: medium, 3: high
   final List<Color> _streakColors = [
     Colors.grey.shade700,
@@ -307,7 +305,6 @@ class _WorkoutState extends State<Workout> {
                 size: 28,
               ),
               onPressed: () {
-                // TODO: demo logic. add backend logic later
                 setState(() {
                   _streakLevel = (_streakLevel + 1) % _streakColors.length;
                 });
