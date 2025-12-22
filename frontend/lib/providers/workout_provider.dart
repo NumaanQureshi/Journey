@@ -30,7 +30,6 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   /// Load all available exercises with pagination
-  /// Fetches exercises in batches of 100 to handle large datasets
   Future<void> loadExercises() async {
     isLoading = true;
     error = null;
@@ -39,7 +38,7 @@ class WorkoutProvider extends ChangeNotifier {
     try {
       exercises = [];
       int offset = 0;
-      const int batchSize = 100;  // Reduced from 500 to avoid large response issues
+      const int batchSize = 500; 
       bool hasMore = true;
 
       while (hasMore) {
@@ -60,9 +59,8 @@ class WorkoutProvider extends ChangeNotifier {
           if (batch.length < batchSize) {
             hasMore = false;
           }
-          // Add a longer delay between requests to let server close connections properly
           if (hasMore) {
-            await Future.delayed(const Duration(milliseconds: 500));
+            await Future.delayed(const Duration(milliseconds: 100));
           }
         }
       }
@@ -199,8 +197,7 @@ class WorkoutProvider extends ChangeNotifier {
         targetWeightLb: targetWeightLb,
         restSeconds: restSeconds,
       );
-      // Reload programs to get updated data
-      await loadPrograms();
+      await loadTemplatesForActiveProgram();
       return templateExercise;
     } catch (e) {
       error = e.toString();
