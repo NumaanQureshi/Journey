@@ -9,46 +9,53 @@ class Exercise {
   final String name;
   final String? description;
   final String? category;
-  final String? force;
-  final String? level;
+  final String? categoryMajor;
+  final String? difficultyLevel;
   final String? mechanic;
   final String? equipment;
   final List<String>? primaryMuscles;
   final List<String>? secondaryMuscles;
+  final List<String>? instructions;
+  final List<String>? images;
 
   Exercise({
     required this.id,
     required this.name,
     this.description,
     this.category,
-    this.force,
-    this.level,
+    this.categoryMajor,
+    this.difficultyLevel,
     this.mechanic,
     this.equipment,
     this.primaryMuscles,
     this.secondaryMuscles,
+    this.instructions,
+    this.images,
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
+    // Handle array fields - they may come as arrays or need to be converted
+    List<String>? parseStringArray(dynamic value) {
+      if (value == null) return null;
+      if (value is List) {
+        return List<String>.from(value);
+      }
+      return null;
+    }
+
     return Exercise(
-      id: json['id'],
-      name: json['name'],
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      name: json['name'] ?? '',
       description: json['description'],
       category: json['category'],
-      force: json['force'],
-      level: json['level'],
+      categoryMajor: json['category_major'],
+      difficultyLevel: json['difficulty_level'] ?? json['level'],
       mechanic: json['mechanic'],
       equipment: json['equipment'],
-      primaryMuscles: json['primaryMuscles'] != null
-          ? List<String>.from(json['primaryMuscles'])
-          : json['primary_muscles'] != null
-              ? List<String>.from(json['primary_muscles'])
-              : null,
-      secondaryMuscles: json['secondaryMuscles'] != null
-          ? List<String>.from(json['secondaryMuscles'])
-          : json['secondary_muscles'] != null
-              ? List<String>.from(json['secondary_muscles'])
-              : null,
+      primaryMuscles: parseStringArray(json['primaryMuscles'] ?? json['primary_muscles']),
+      secondaryMuscles: parseStringArray(json['secondaryMuscles'] ?? json['secondary_muscles']),
+      instructions: parseStringArray(json['instructions']),
+      images: parseStringArray(json['images']),
     );
   }
 }
@@ -76,17 +83,72 @@ class TemplateExercise {
     this.exercise,
   });
 
-  factory TemplateExercise.fromJson(Map<String, dynamic> json) {
+  factory TemplateExercise.fromJson(Map<String, dynamic> json, {int? defaultTemplateId}) {
+    // Debug logging
+    debugPrint('TemplateExercise.fromJson received: $json');
+    
+    // Handle null values for required fields
+    final id = json['id'] ?? json['id']; // Try both camelCase and snake_case
+    final templateId = json['template_id'] ?? json['templateId'] ?? defaultTemplateId;
+    final exerciseId = json['exercise_id'] ?? json['exerciseId'];
+    
+    if (id == null) {
+      throw Exception('TemplateExercise.fromJson: id is null');
+    }
+    if (templateId == null) {
+      throw Exception('TemplateExercise.fromJson: templateId is null');
+    }
+    if (exerciseId == null) {
+      throw Exception('TemplateExercise.fromJson: exerciseId is null');
+    }
+    
+    // Helper function to safely parse double values
+    double? parseDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) {
+        try {
+          return double.parse(value);
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    }
+    
+    // Create Exercise object if we have exercise details
+    Exercise? exercise;
+    if (json['exercise'] != null) {
+      exercise = Exercise.fromJson(json['exercise']);
+    } else if (json['exercise_name'] != null) {
+      // Create a minimal Exercise object from exercise_name and exercise_id
+      exercise = Exercise(
+        id: exerciseId is int ? exerciseId : int.parse(exerciseId.toString()),
+        name: json['exercise_name'] as String,
+        description: null,
+        category: null,
+        difficultyLevel: null,
+        mechanic: null,
+        equipment: null,
+        primaryMuscles: null,
+        secondaryMuscles: null,
+        instructions: null,
+        categoryMajor: null,
+        images: null,
+      );
+    }
+    
     return TemplateExercise(
-      id: json['id'],
-      templateId: json['template_id'],
-      exerciseId: json['exercise_id'],
-      targetSets: json['target_sets'],
-      targetReps: json['target_reps'],
-      targetWeightLb: json['target_weight_lb'],
-      restSeconds: json['rest_seconds'],
-      orderIndex: json['order_index'],
-      exercise: json['exercise'] != null ? Exercise.fromJson(json['exercise']) : null,
+      id: id is int ? id : int.parse(id.toString()),
+      templateId: templateId is int ? templateId : int.parse(templateId.toString()),
+      exerciseId: exerciseId is int ? exerciseId : int.parse(exerciseId.toString()),
+      targetSets: json['target_sets'] ?? json['targetSets'],
+      targetReps: json['target_reps'] ?? json['targetReps'],
+      targetWeightLb: parseDouble(json['target_weight_lb'] ?? json['targetWeightLb']),
+      restSeconds: json['rest_seconds'] ?? json['restSeconds'],
+      orderIndex: json['order_index'] ?? json['orderIndex'],
+      exercise: exercise,
     );
   }
 }
@@ -111,15 +173,16 @@ class WorkoutTemplate {
   });
 
   factory WorkoutTemplate.fromJson(Map<String, dynamic> json) {
+    final templateId = (json['id'] as int?) ?? 0;
     return WorkoutTemplate(
-      id: (json['id'] as int?) ?? 0,
+      id: templateId,
       programId: (json['program_id'] as int?) ?? 0,
       name: (json['name'] as String?) ?? 'Unnamed Template',
       dayOrder: json['day_order'] as int?,
       notes: json['notes'] as String?,
       createdAt: Program._parseDate(json['created_at']),
       exercises: json['exercises'] != null
-          ? (json['exercises'] as List).map((e) => TemplateExercise.fromJson(e)).toList()
+          ? (json['exercises'] as List).map((e) => TemplateExercise.fromJson(e, defaultTemplateId: templateId)).toList()
           : [],
     );
   }
@@ -424,9 +487,50 @@ class WorkoutService {
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint('DEBUG: getTemplatesForProgram response: $body');
         if (body['success'] == true && body['templates'] != null) {
           final data = body['templates'] as List;
-          return data.map((t) => WorkoutTemplate.fromJson(t)).toList();
+          final templates = data.map((t) => WorkoutTemplate.fromJson(t)).toList();
+          
+          // Fetch exercises for each template
+          for (int i = 0; i < templates.length; i++) {
+            final template = templates[i];
+            try {
+              final exercisesResponse = await http.get(
+                Uri.parse('${ApiService.workouts()}/templates/${template.id}/exercises'),
+                headers: {'Authorization': 'Bearer $token'},
+              );
+              
+              if (exercisesResponse.statusCode == 200) {
+                final exercisesBody = jsonDecode(exercisesResponse.body) as Map<String, dynamic>;
+                if (exercisesBody['success'] == true && exercisesBody['exercises'] != null) {
+                  final exercisesData = exercisesBody['exercises'] as List;
+                  final exercises = exercisesData.map((e) => TemplateExercise.fromJson(e, defaultTemplateId: template.id)).toList();
+                  
+                  // Replace template in the list with one that has exercises
+                  templates[i] = WorkoutTemplate(
+                    id: template.id,
+                    programId: template.programId,
+                    name: template.name,
+                    dayOrder: template.dayOrder,
+                    notes: template.notes,
+                    createdAt: template.createdAt,
+                    exercises: exercises,
+                  );
+                  debugPrint('DEBUG: Loaded ${exercises.length} exercises for template ${template.name}');
+                }
+              }
+            } catch (e) {
+              debugPrint('DEBUG: Error loading exercises for template ${template.id}: $e');
+              // Continue anyway - template just won't have exercises
+            }
+          }
+          
+          debugPrint('DEBUG: Parsed ${templates.length} templates');
+          for (var template in templates) {
+            debugPrint('DEBUG: Template ${template.name} has ${template.exercises.length} exercises');
+          }
+          return templates;
         }
         throw Exception('Invalid response format');
       } else {
@@ -573,6 +677,9 @@ class WorkoutService {
       final token = await _authService.getToken();
       if (token == null) throw Exception('No auth token');
 
+      debugPrint('Adding exercise $exerciseId to template $templateId');
+      debugPrint('Target sets: $targetSets, target reps: $targetReps, target weight: $targetWeightLb');
+
       final response = await http.post(
         Uri.parse('${ApiService.workouts()}/templates/$templateId/exercises'),
         headers: {
@@ -589,16 +696,36 @@ class WorkoutService {
         }),
       );
 
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint('Parsed response body: $body');
+        
         if (body['success'] == true && body['template_exercise'] != null) {
-          return TemplateExercise.fromJson(body['template_exercise']);
+          final templateExerciseData = body['template_exercise'] as Map<String, dynamic>;
+          // Create a minimal TemplateExercise object with the data we have
+          // The backend only returns {id}, so we construct from known values
+          return TemplateExercise(
+            id: templateExerciseData['id'] ?? 0,
+            templateId: templateId,
+            exerciseId: exerciseId,
+            targetSets: targetSets,
+            targetReps: targetReps,
+            targetWeightLb: targetWeightLb,
+            restSeconds: restSeconds,
+            orderIndex: orderIndex,
+            exercise: null, // Will be populated when templates are reloaded
+          );
         }
-        throw Exception('Invalid response format');
+        throw Exception('Invalid response format: $body');
       } else {
-        throw Exception('Failed to add exercise: ${response.statusCode}');
+        final errorBody = jsonDecode(response.body);
+        throw Exception('Failed to add exercise: ${response.statusCode} - $errorBody');
       }
     } catch (e) {
+      debugPrint('Error in addExerciseToTemplate: $e');
       rethrow;
     }
   }
