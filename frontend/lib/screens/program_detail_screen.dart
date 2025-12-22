@@ -688,12 +688,14 @@ class _AddExerciseDialog extends StatefulWidget {
 class _AddExerciseDialogState extends State<_AddExerciseDialog> {
   late int? selectedExerciseId;
   late String sortBy;
-  late String? filterForce;
+  late String? filterDifficulty;
   late String? filterMuscle;
   late String searchQuery;
+  late bool showSortOptions;
+  late bool showFilterOptions;
 
-  final setsController = TextEditingController(text: '3');
-  final repsController = TextEditingController(text: '8-12');
+  final setsController = TextEditingController();
+  final repsController = TextEditingController();
   final weightController = TextEditingController();
   final searchController = TextEditingController();
 
@@ -702,9 +704,11 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
     super.initState();
     selectedExerciseId = null;
     sortBy = 'name';
-    filterForce = null;
+    filterDifficulty = null;
     filterMuscle = null;
     searchQuery = '';
+    showSortOptions = false;
+    showFilterOptions = false;
   }
 
   @override
@@ -719,18 +723,20 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
   /// Get sorted and filtered exercises
   List<Exercise> getSortedExercises(List<Exercise> exercises) {
     var filtered = exercises.where((ex) {
-      final matchesSearch = searchQuery.isEmpty ||
-          ex.name.toLowerCase().contains(searchQuery.toLowerCase());
-      final matchesForce = filterForce == null || ex.force == filterForce;
+      // Check if all search terms are present in the exercise name
+      final matchesSearch = searchQuery.isEmpty || 
+          searchQuery.toLowerCase().split(' ').every((term) =>
+              term.isEmpty || ex.name.toLowerCase().contains(term));
+      final matchesDifficulty = filterDifficulty == null || ex.difficultyLevel == filterDifficulty;
       final matchesMuscle = filterMuscle == null ||
           (ex.primaryMuscles?.contains(filterMuscle) ?? false);
 
-      return matchesSearch && matchesForce && matchesMuscle;
+      return matchesSearch && matchesDifficulty && matchesMuscle;
     }).toList();
 
     filtered.sort((a, b) {
-      if (sortBy == 'force') {
-        return (a.force ?? '').compareTo(b.force ?? '');
+      if (sortBy == 'difficulty') {
+        return (a.difficultyLevel ?? '').compareTo(b.difficultyLevel ?? '');
       } else if (sortBy == 'primaryMuscle') {
         final aMuscle =
             a.primaryMuscles?.isNotEmpty ?? false ? a.primaryMuscles!.first : '';
@@ -775,10 +781,10 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
     print('DEBUG: Sorted exercises: ${sortedExercises.length}');
 
     final muscles = <String>{'None'};
-    final forces = <String>{'None'};
+    final difficulties = <String>{'None'};
 
     for (var ex in provider.exercises) {
-      if (ex.force != null) forces.add(ex.force!);
+      if (ex.difficultyLevel != null) difficulties.add(ex.difficultyLevel!);
       if (ex.primaryMuscles != null) {
         muscles.addAll(ex.primaryMuscles!);
       }
@@ -816,123 +822,170 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              // Sort buttons
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    FilterChip(
-                      label: const Text('Name'),
-                      selected: sortBy == 'name',
-                      onSelected: (_) {
-                        setState(() {
-                          sortBy = 'name';
-                        });
-                      },
-                      backgroundColor: const Color(0xFF3A3A3A),
-                      selectedColor: Colors.orangeAccent,
-                      labelStyle: TextStyle(
-                        color: sortBy == 'name' ? Colors.black : Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Force'),
-                      selected: sortBy == 'force',
-                      onSelected: (_) {
-                        setState(() {
-                          sortBy = 'force';
-                        });
-                      },
-                      backgroundColor: const Color(0xFF3A3A3A),
-                      selectedColor: Colors.orangeAccent,
-                      labelStyle: TextStyle(
-                        color: sortBy == 'force' ? Colors.black : Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Muscle'),
-                      selected: sortBy == 'primaryMuscle',
-                      onSelected: (_) {
-                        setState(() {
-                          sortBy = 'primaryMuscle';
-                        });
-                      },
-                      backgroundColor: const Color(0xFF3A3A3A),
-                      selectedColor: Colors.orangeAccent,
-                      labelStyle: TextStyle(
-                        color: sortBy == 'primaryMuscle'
-                            ? Colors.black
-                            : Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Filter dropdowns
+              // Sort and Filter buttons
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<String?>(
-                      dropdownColor: const Color(0xFF2C2C2C),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Force',
-                        hintStyle: const TextStyle(color: Colors.white70),
-                        border: const OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.white70),
-                        ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      initialValue: filterForce,
-                      items: forces.map((f) {
-                        return DropdownMenuItem<String?>(
-                          value: f == 'None' ? null : f,
-                          child: Text(f),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
+                    child: ElevatedButton.icon(
+                      onPressed: () {
                         setState(() {
-                          filterForce = value;
+                          showSortOptions = !showSortOptions;
+                          showFilterOptions = false;
                         });
                       },
+                      icon: const Icon(Icons.sort),
+                      label: const Text('Sort By'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: showSortOptions ? Colors.orangeAccent : const Color(0xFF3A3A3A),
+                        foregroundColor: showSortOptions ? Colors.black : Colors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: DropdownButtonFormField<String?>(
-                      dropdownColor: const Color(0xFF2C2C2C),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Muscle',
-                        hintStyle: const TextStyle(color: Colors.white70),
-                        border: const OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.white70),
-                        ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      initialValue: filterMuscle,
-                      items: muscles.toList().map((m) {
-                        return DropdownMenuItem<String?>(
-                          value: m == 'None' ? null : m,
-                          child: Text(m),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
+                    child: ElevatedButton.icon(
+                      onPressed: () {
                         setState(() {
-                          filterMuscle = value;
+                          showFilterOptions = !showFilterOptions;
+                          showSortOptions = false;
                         });
                       },
+                      icon: const Icon(Icons.filter_list),
+                      label: const Text('Filter'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: showFilterOptions ? Colors.orangeAccent : const Color(0xFF3A3A3A),
+                        foregroundColor: showFilterOptions ? Colors.black : Colors.white,
+                      ),
                     ),
                   ),
                 ],
               ),
+              if (showSortOptions) ...[
+                const SizedBox(height: 12),
+                // Sort options
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      FilterChip(
+                        label: const Text('Name'),
+                        selected: sortBy == 'name',
+                        onSelected: (_) {
+                          setState(() {
+                            sortBy = 'name';
+                          });
+                        },
+                        backgroundColor: const Color(0xFF3A3A3A),
+                        selectedColor: Colors.orangeAccent,
+                        labelStyle: TextStyle(
+                          color: sortBy == 'name' ? Colors.black : Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('Difficulty'),
+                        selected: sortBy == 'difficulty',
+                        onSelected: (_) {
+                          setState(() {
+                            sortBy = 'difficulty';
+                          });
+                        },
+                        backgroundColor: const Color(0xFF3A3A3A),
+                        selectedColor: Colors.orangeAccent,
+                        labelStyle: TextStyle(
+                          color: sortBy == 'difficulty' ? Colors.black : Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('Muscle'),
+                        selected: sortBy == 'primaryMuscle',
+                        onSelected: (_) {
+                          setState(() {
+                            sortBy = 'primaryMuscle';
+                          });
+                        },
+                        backgroundColor: const Color(0xFF3A3A3A),
+                        selectedColor: Colors.orangeAccent,
+                        labelStyle: TextStyle(
+                          color: sortBy == 'primaryMuscle'
+                              ? Colors.black
+                              : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (showFilterOptions) ...[
+                const SizedBox(height: 12),
+                // Filter dropdowns
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String?>(
+                        dropdownColor: const Color(0xFF2C2C2C),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Difficulty',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          hintText: 'Any',
+                          hintStyle: const TextStyle(color: Colors.white70),
+                          border: const OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.white70),
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        initialValue: filterDifficulty,
+                        items: difficulties.map((d) {
+                          return DropdownMenuItem<String?>(
+                            value: d == 'None' ? null : d,
+                            child: Text(d == 'None' ? 'Any' : d),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            filterDifficulty = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonFormField<String?>(
+                        dropdownColor: const Color(0xFF2C2C2C),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Muscle',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          hintText: 'Any',
+                          hintStyle: const TextStyle(color: Colors.white70),
+                          border: const OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.white70),
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        initialValue: filterMuscle,
+                        items: muscles.toList().map((m) {
+                          return DropdownMenuItem<String?>(
+                            value: m == 'None' ? null : m,
+                            child: Text(m == 'None' ? 'Any' : m),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            filterMuscle = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
               // Exercise list
               Container(
@@ -997,7 +1050,7 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
                                             ),
                                           ),
                                           Text(
-                                            '$primaryMuscle${exercise.force != null ? ' • ${exercise.force}' : ''}',
+                                            '$primaryMuscle${exercise.difficultyLevel != null ? ' • ${exercise.difficultyLevel}' : ''}',
                                             style: const TextStyle(
                                               color: Colors.white70,
                                               fontSize: 12,
@@ -1021,31 +1074,44 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
                       ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: setsController,
-                style: const TextStyle(color: Colors.white),
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Sets',
-                  hintStyle: const TextStyle(color: Colors.white70),
-                  border: const OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.white70),
+              // Sets and Reps side by side
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: setsController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Sets',
+                        labelStyle: const TextStyle(color: Colors.white70),
+                        hintText: 'e.g., 3',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: const OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.white70),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: repsController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Reps (e.g., 8-12)',
-                  hintStyle: const TextStyle(color: Colors.white70),
-                  border: const OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.white70),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: repsController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Reps',
+                        labelStyle: const TextStyle(color: Colors.white70),
+                        hintText: 'e.g., 8-12',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: const OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.white70),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 12),
               TextField(
@@ -1086,7 +1152,7 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
             final messenger = ScaffoldMessenger.of(context);
             final prov = context.read<WorkoutProvider>();
             try {
-              await WorkoutService.addExerciseToTemplate(
+              await prov.addExerciseToTemplate(
                 templateId: widget.template.id,
                 exerciseId: selectedExerciseId!,
                 targetSets: int.tryParse(setsController.text) ?? 3,
@@ -1096,7 +1162,6 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
               );
               if (mounted) {
                 nav.pop();
-                await prov.loadTemplatesForActiveProgram();
                 messenger.showSnackBar(
                   const SnackBar(content: Text('Exercise added successfully')),
                 );
