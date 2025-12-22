@@ -108,6 +108,47 @@ class WorkoutProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set a program as active by ID (deactivates other programs)
+  Future<bool> setActiveProgramById(int programId) async {
+    try {
+      // Find the program to activate
+      final programToActivate = programs.firstWhere(
+        (p) => p.id == programId,
+        orElse: () => throw Exception('Program not found'),
+      );
+
+      // Deactivate all programs and activate the selected one
+      for (int i = 0; i < programs.length; i++) {
+        if (programs[i].id == programId) {
+          // Activate this program
+          final updatedProgram = await WorkoutService.updateProgram(
+            programId: programId,
+            name: programToActivate.name,
+            description: programToActivate.description,
+            isActive: true,
+          );
+          programs[i] = updatedProgram;
+          activeProgram = updatedProgram;
+        } else if (programs[i].isActive == true) {
+          // Deactivate other programs
+          final updatedProgram = await WorkoutService.updateProgram(
+            programId: programs[i].id,
+            name: programs[i].name,
+            description: programs[i].description,
+            isActive: false,
+          );
+          programs[i] = updatedProgram;
+        }
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      debugPrint('Error setting active program: $e');
+      return false;
+    }
+  }
+
   /// Load templates for the active program
   Future<void> loadTemplatesForActiveProgram() async {
     if (activeProgram == null) {

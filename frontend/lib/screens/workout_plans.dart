@@ -95,13 +95,33 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
             trailing: PopupMenuButton<String>(
               color: const Color(0xFF2C2C2C),
               onSelected: (value) {
-                if (value == 'edit') {
+                if (value == 'set-active') {
+                  _setActiveProgramConfirmation(context, program, provider);
+                } else if (value == 'edit') {
                   _showEditProgramDialog(context, program);
                 } else if (value == 'delete') {
                   _showDeleteConfirmationDialog(context, program, provider);
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  value: 'set-active',
+                  child: Row(
+                    children: [
+                      Icon(
+                        program.isActive == true ? Icons.check_circle : Icons.radio_button_unchecked,
+                        color: program.isActive == true ? Colors.green : Colors.white70,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        program.isActive == true ? 'Active' : 'Set as Active',
+                        style: TextStyle(color: program.isActive == true ? Colors.green : Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 const PopupMenuItem<String>(
                   value: 'edit',
                   child: Row(
@@ -329,6 +349,92 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
               }
             },
             child: const Text('Update', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show dialog to set a program as active
+  void _setActiveProgramConfirmation(
+    BuildContext context,
+    Program program,
+    WorkoutProvider provider,
+  ) {
+    // If already active, show info dialog instead
+    if (program.isActive == true) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF2C2C2C),
+          title: const Text(
+            'Program Active',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            '"${program.name}" is already your active program.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK', style: TextStyle(color: Colors.orangeAccent)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation to set as active
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Set as Active Program?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Make "${program.name}" your active program? Any previously active program will be deactivated.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+            ),
+            onPressed: () async {
+              final nav = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                final success = await provider.setActiveProgramById(program.id);
+                if (mounted) {
+                  nav.pop();
+                  if (success) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('"${program.name}" is now active')),
+                    );
+                  } else {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Error: ${provider.error}')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  nav.pop();
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Set as Active', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
