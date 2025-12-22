@@ -412,6 +412,8 @@ class UserProvider extends ChangeNotifier {
     _user = null;
     _error = null;
     await _storage.delete(key: 'user_data');
+    // Also clear the authentication token
+    await _storage.delete(key: 'auth_token');
     notifyListeners();
   }
 
