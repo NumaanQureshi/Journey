@@ -7,6 +7,7 @@ import 'workout_plans.dart';
 import 'dart:core';
 import 'dart:math' as math;
 import 'workout_logs.dart';
+import '../services/ai_service.dart';
 
 class _RingProgressPainter extends CustomPainter {
   final double progress;
@@ -60,7 +61,13 @@ class _WorkoutContentState extends State<WorkoutContent>
     with TickerProviderStateMixin {
   late AnimationController _ringController;
   late Animation<double> _ringAnimation;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
   bool _isHolding = false;
+  
+  final AiService _aiService = AiService();
+  String _motivationalMessage = 'Ready to crush it? 💪';
+  bool _isLoadingMessage = true;
 
   @override
   void initState() {
@@ -70,11 +77,50 @@ class _WorkoutContentState extends State<WorkoutContent>
       vsync: this,
     );
     _ringAnimation = Tween<double>(begin: 0, end: 1).animate(_ringController);
+    
+    // Fade animation for the message
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
+    );
+    
+    // Fetch motivational message asynchronously
+    _fetchMotivationalMessage();
+  }
+
+  Future<void> _fetchMotivationalMessage() async {
+    try {
+      final message = await _aiService.sendMessage(
+        'Give me a single sentence motivational quote to encourage someone to have a great workout today. '
+        'Just the quote, no additional text or punctuation.',
+      );
+      
+      if (mounted) {
+        setState(() {
+          _motivationalMessage = message;
+          _isLoadingMessage = false;
+        });
+        // Trigger fade-in animation
+        _fadeController.forward();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingMessage = false;
+        });
+        // Keep default message and fade it in anyway
+        _fadeController.forward();
+      }
+    }
   }
 
   @override
   void dispose() {
     _ringController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
@@ -125,10 +171,18 @@ class _WorkoutContentState extends State<WorkoutContent>
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          "We're not skipping legs today.",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                      children: [
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Text(
+                            _motivationalMessage,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
