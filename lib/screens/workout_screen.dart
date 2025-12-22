@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,7 +6,42 @@ import 'side_menu.dart';
 import 'workout_session.dart';
 import 'workout_plans.dart';
 import 'dart:core';
+import 'dart:math' as math;
 import 'workout_logs.dart';
+
+class _RingProgressPainter extends CustomPainter {
+  final double progress;
+
+  _RingProgressPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.orange
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 2;
+
+    // Draw the progress arc from -90 degrees (top) for a full 360 degree sweep
+    final sweepAngle = progress * 2 * math.pi;
+    
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2, // Start at top
+      sweepAngle,
+      false,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RingProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
 
 class Workout extends StatefulWidget {
   const Workout({super.key});
@@ -14,8 +50,59 @@ class Workout extends StatefulWidget {
   State<Workout> createState() => _WorkoutState();
 }
 
-class WorkoutContent extends StatelessWidget {
+class WorkoutContent extends StatefulWidget {
   const WorkoutContent({super.key});
+
+  @override
+  State<WorkoutContent> createState() => _WorkoutContentState();
+}
+
+class _WorkoutContentState extends State<WorkoutContent>
+    with TickerProviderStateMixin {
+  late AnimationController _ringController;
+  late Animation<double> _ringAnimation;
+  bool _isHolding = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ringController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    _ringAnimation = Tween<double>(begin: 0, end: 1).animate(_ringController);
+  }
+
+  @override
+  void dispose() {
+    _ringController.dispose();
+    super.dispose();
+  }
+
+  void _onPointerDown() {
+    if (!_isHolding) {
+      _isHolding = true;
+      _ringController.forward();
+    }
+  }
+
+  void _onPointerUp() {
+    if (_isHolding) {
+      _isHolding = false;
+      
+      // Check if the animation completed (user held for full 2 seconds)
+      if (_ringAnimation.value >= 1.0) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const WorkoutSession(),
+          ),
+        );
+      }
+      
+      _ringController.reverse();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,34 +144,55 @@ class WorkoutContent extends StatelessWidget {
         Expanded(
           child: Center(
             child: SizedBox(
-              width: 200,
-              height: 200,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const WorkoutSession(),
-                    ),
+              width: 300,
+              height: 300,
+              child: AnimatedBuilder(
+                animation: _ringAnimation,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Animated progress ring
+                      if (_ringAnimation.value > 0)
+                        CustomPaint(
+                          size: const Size(200, 200),
+                          painter: _RingProgressPainter(
+                            progress: _ringAnimation.value,
+                          ),
+                        ),
+                      // Button with fixed size
+                      SizedBox(
+                        width: 200,
+                        height: 200,
+                        child: Listener(
+                          onPointerDown: (_) => _onPointerDown(),
+                          onPointerUp: (_) => _onPointerUp(),
+                          onPointerCancel: (_) => _onPointerUp(),
+                          child: ElevatedButton(
+                            onPressed: null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(255, 24, 24, 24),
+                              shadowColor: Colors.red,
+                              surfaceTintColor: const Color.fromARGB(255, 37, 12, 10),
+                              elevation: 15,
+                              shape: const CircleBorder(),
+                              side: const BorderSide(color: Colors.orange, width: 2),
+                            ),
+                            child: Text(
+                              'Start Session',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.mavenPro(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 24, 24, 24),
-                  shadowColor: Colors.red,
-                  surfaceTintColor: const Color.fromARGB(255, 37, 12, 10),
-                  elevation: 15,
-                  shape: const CircleBorder(),
-                  side: const BorderSide(color: Colors.orange, width: 2),
-                ),
-                child: Text(
-                  'Start Session',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.mavenPro(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
               ),
             ),
           ),
