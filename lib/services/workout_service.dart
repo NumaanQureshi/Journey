@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'api_service.dart';
 import 'auth_service.dart';
@@ -8,12 +9,24 @@ class Exercise {
   final String name;
   final String? description;
   final String? category;
+  final String? force;
+  final String? level;
+  final String? mechanic;
+  final String? equipment;
+  final List<String>? primaryMuscles;
+  final List<String>? secondaryMuscles;
 
   Exercise({
     required this.id,
     required this.name,
     this.description,
     this.category,
+    this.force,
+    this.level,
+    this.mechanic,
+    this.equipment,
+    this.primaryMuscles,
+    this.secondaryMuscles,
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
@@ -22,6 +35,20 @@ class Exercise {
       name: json['name'],
       description: json['description'],
       category: json['category'],
+      force: json['force'],
+      level: json['level'],
+      mechanic: json['mechanic'],
+      equipment: json['equipment'],
+      primaryMuscles: json['primaryMuscles'] != null
+          ? List<String>.from(json['primaryMuscles'])
+          : json['primary_muscles'] != null
+              ? List<String>.from(json['primary_muscles'])
+              : null,
+      secondaryMuscles: json['secondaryMuscles'] != null
+          ? List<String>.from(json['secondaryMuscles'])
+          : json['secondary_muscles'] != null
+              ? List<String>.from(json['secondary_muscles'])
+              : null,
     );
   }
 }
@@ -85,12 +112,12 @@ class WorkoutTemplate {
 
   factory WorkoutTemplate.fromJson(Map<String, dynamic> json) {
     return WorkoutTemplate(
-      id: json['id'],
-      programId: json['program_id'],
-      name: json['name'],
-      dayOrder: json['day_order'],
-      notes: json['notes'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      id: (json['id'] as int?) ?? 0,
+      programId: (json['program_id'] as int?) ?? 0,
+      name: (json['name'] as String?) ?? 'Unnamed Template',
+      dayOrder: json['day_order'] as int?,
+      notes: json['notes'] as String?,
+      createdAt: Program._parseDate(json['created_at']),
       exercises: json['exercises'] != null
           ? (json['exercises'] as List).map((e) => TemplateExercise.fromJson(e)).toList()
           : [],
@@ -100,7 +127,7 @@ class WorkoutTemplate {
 
 class Program {
   final int id;
-  final int userId;
+  final int? userId;
   final String name;
   final String? description;
   final bool? isActive;
@@ -109,7 +136,7 @@ class Program {
 
   Program({
     required this.id,
-    required this.userId,
+    this.userId,
     required this.name,
     this.description,
     this.isActive,
@@ -117,14 +144,57 @@ class Program {
     this.templates = const [],
   });
 
+  /// Helper method to safely parse dates from various formats
+  static DateTime? _parseDate(dynamic dateValue) {
+    if (dateValue == null) return null;
+    
+    try {
+      final dateString = dateValue.toString().trim();
+      if (dateString.isEmpty) return null;
+      
+      // Try ISO 8601 format first
+      try {
+        return DateTime.parse(dateString);
+      } catch (_) {
+        // If that fails, try other common formats
+        // Handle HTTP date format: "Thu, 18 Dec 2025 18:56:16 GMT"
+        if (dateString.contains(',')) {
+          // Parse HTTP date format manually
+          final parts = dateString.split(' ');
+          if (parts.length >= 4) {
+            final months = {
+              'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+              'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+            };
+            try {
+              final day = int.parse(parts[1]);
+              final month = months[parts[2]] ?? 1;
+              final year = int.parse(parts[3]);
+              final timeParts = parts[4].split(':');
+              final hour = int.parse(timeParts[0]);
+              final minute = int.parse(timeParts[1]);
+              final second = int.parse(timeParts[2]);
+              return DateTime.utc(year, month, day, hour, minute, second);
+            } catch (_) {
+              return null;
+            }
+          }
+        }
+        return null;
+      }
+    } catch (_) {
+      return null;
+    }
+  }
+
   factory Program.fromJson(Map<String, dynamic> json) {
     return Program(
-      id: json['id'],
-      userId: json['user_id'],
-      name: json['name'],
-      description: json['description'],
-      isActive: json['is_active'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      id: json['id'] as int? ?? 0,
+      userId: json['user_id'] as int?,
+      name: (json['name'] as String?) ?? 'Unnamed Program',
+      description: json['description'] as String?,
+      isActive: json['is_active'] as bool?,
+      createdAt: _parseDate(json['created_at']),
       templates: json['templates'] != null
           ? (json['templates'] as List).map((t) => WorkoutTemplate.fromJson(t)).toList()
           : [],
@@ -172,8 +242,8 @@ class WorkoutSession {
       id: json['id'],
       userId: json['user_id'],
       templateId: json['template_id'],
-      startTime: json['start_time'] != null ? DateTime.parse(json['start_time']) : null,
-      endTime: json['end_time'] != null ? DateTime.parse(json['end_time']) : null,
+      startTime: Program._parseDate(json['start_time']),
+      endTime: Program._parseDate(json['end_time']),
       status: json['status'],
       durationMin: json['duration_min'],
       caloriesBurned: json['calories_burned'],
@@ -239,10 +309,23 @@ class WorkoutService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
+        Map<String, dynamic>? programData;
+        
+        // Try to extract program data from nested structure
         if (body['success'] == true && body['program'] != null) {
-          return Program.fromJson(body['program']);
+          programData = body['program'] as Map<String, dynamic>;
+        } else if (body.containsKey('id')) {
+          // Response might be the program directly
+          programData = body;
         }
-        throw Exception('Invalid response format');
+        
+        if (programData != null) {
+          // Ensure name and description are preserved from request
+          programData['name'] = programData['name'] ?? name;
+          programData['description'] = programData['description'] ?? description;
+          return Program.fromJson(programData);
+        }
+        throw Exception('Invalid response format: no program data');
       } else {
         throw Exception('Failed to create program: ${response.statusCode}');
       }
@@ -276,9 +359,50 @@ class WorkoutService {
       );
 
       if (response.statusCode == 200) {
-        return Program.fromJson(jsonDecode(response.body));
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        // Backend returns: {"success": true, "program": {...}}
+        if (body['success'] == true && body['program'] != null) {
+          final programData = body['program'] as Map<String, dynamic>;
+          // Ensure all required fields are present
+          programData['id'] = programData['id'] ?? programId;
+          programData['name'] = programData['name'] ?? name;
+          programData['description'] = programData['description'] ?? description;
+          return Program.fromJson(programData);
+        } else {
+          throw Exception('Invalid response format: missing program data');
+        }
       } else {
         throw Exception('Failed to update program: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete a program
+  static Future<void> deleteProgram({required int programId}) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.delete(
+        Uri.parse('${ApiService.workouts()}/programs/$programId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] != true) {
+          throw Exception(body['error'] ?? 'Failed to delete program');
+        }
+      } else if (response.statusCode == 403) {
+        throw Exception('Unauthorized: You do not own this program');
+      } else {
+        throw Exception('Failed to delete program: ${response.statusCode}');
       }
     } catch (e) {
       rethrow;
@@ -339,12 +463,94 @@ class WorkoutService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
+        Map<String, dynamic>? templateData;
+        
+        // Try to extract template data from nested structure
+        if (body['success'] == true && body['template'] != null) {
+          templateData = body['template'] as Map<String, dynamic>;
+        } else if (body.containsKey('id')) {
+          // Response might be the template directly
+          templateData = body;
+        }
+        
+        if (templateData != null) {
+          // Ensure required fields are preserved from request
+          templateData['program_id'] = templateData['program_id'] ?? programId;
+          templateData['name'] = templateData['name'] ?? name;
+          return WorkoutTemplate.fromJson(templateData);
+        }
+        throw Exception('Invalid response format: no template data');
+      } else {
+        throw Exception('Failed to create template: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update an existing workout template
+  static Future<WorkoutTemplate> updateTemplate({
+    required int templateId,
+    required String name,
+    String? notes,
+    int? dayOrder,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.put(
+        Uri.parse('${ApiService.workouts()}/templates/$templateId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'notes': notes,
+          'day_order': dayOrder,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
         if (body['success'] == true && body['template'] != null) {
           return WorkoutTemplate.fromJson(body['template']);
         }
         throw Exception('Invalid response format');
+      } else if (response.statusCode == 403) {
+        throw Exception('Unauthorized: You do not own this template');
       } else {
-        throw Exception('Failed to create template: ${response.statusCode}');
+        throw Exception('Failed to update template: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete a workout template
+  static Future<void> deleteTemplate({required int templateId}) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.delete(
+        Uri.parse('${ApiService.workouts()}/templates/$templateId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] != true) {
+          throw Exception(body['error'] ?? 'Failed to delete template');
+        }
+      } else if (response.statusCode == 403) {
+        throw Exception('Unauthorized: You do not own this template');
+      } else {
+        throw Exception('Failed to delete template: ${response.statusCode}');
       }
     } catch (e) {
       rethrow;
@@ -391,6 +597,40 @@ class WorkoutService {
         throw Exception('Invalid response format');
       } else {
         throw Exception('Failed to add exercise: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Remove an exercise from a template
+  static Future<void> removeExerciseFromTemplate({
+    required int templateId,
+    required int templateExerciseId,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.delete(
+        Uri.parse('${ApiService.workouts()}/templates/$templateId/exercises/$templateExerciseId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] != true) {
+          throw Exception(body['error'] ?? 'Failed to remove exercise');
+        }
+      } else if (response.statusCode == 403) {
+        throw Exception('Unauthorized: You do not own this template');
+      } else if (response.statusCode == 404) {
+        throw Exception('Template exercise not found');
+      } else {
+        throw Exception('Failed to remove exercise: ${response.statusCode}');
       }
     } catch (e) {
       rethrow;
@@ -496,26 +736,94 @@ class WorkoutService {
     }
   }
 
-  /// Get available exercises
-  static Future<List<Exercise>> getExercises() async {
+  // ==================== EXERCISE LIBRARY ====================
+
+  /// Get all available exercises with optional pagination
+  static Future<List<Exercise>> getExercises({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final uri = Uri.parse('${ApiService.workouts()}/exercises').replace(
+        queryParameters: {
+          'limit': limit.toString(),
+          'offset': offset.toString(),
+        },
+      );
+
+      debugPrint('DEBUG: Fetching exercises from $uri');
+      
+      // Retry logic for transient failures
+      int retries = 5;
+      Exception? lastException;
+      
+      while (retries > 0) {
+        try {
+          // Create a fresh client for each request to avoid connection reuse issues
+          final response = await http.get(
+            uri,
+            headers: {'Authorization': 'Bearer $token'},
+          ).timeout(
+            const Duration(seconds: 60),
+            onTimeout: () => throw Exception('Request timeout while loading exercises'),
+          );
+
+          debugPrint('DEBUG: Response status: ${response.statusCode}');
+          debugPrint('DEBUG: Response body length: ${response.body.length}');
+
+          if (response.statusCode == 200) {
+            final body = jsonDecode(response.body) as Map<String, dynamic>;
+            if (body['success'] == true && body['exercises'] != null) {
+              final data = body['exercises'] as List;
+              debugPrint('DEBUG: Parsed ${data.length} exercises from response');
+              return data.map((e) => Exercise.fromJson(e)).toList();
+            }
+            throw Exception('Invalid response format');
+          } else {
+            throw Exception('Failed to load exercises: ${response.statusCode}');
+          }
+        } on Exception catch (e) {
+          lastException = e;
+          retries--;
+          if (retries > 0) {
+            debugPrint('DEBUG: Request failed, retrying... ($retries retries left)');
+            // Increase delay significantly - server may need time to clean up connections
+            await Future.delayed(const Duration(milliseconds: 1000));
+          }
+        }
+      }
+      
+      throw lastException ?? Exception('Failed to load exercises after retries');
+    } catch (e) {
+      debugPrint('DEBUG: getExercises error: $e');
+      rethrow;
+    }
+  }
+
+  /// Get a specific exercise by ID
+  static Future<Exercise> getExercise(int exerciseId) async {
     try {
       final token = await _authService.getToken();
       if (token == null) throw Exception('No auth token');
 
       final response = await http.get(
-        Uri.parse('${ApiService.workouts()}/exercises'),
+        Uri.parse('${ApiService.workouts()}/exercises/$exerciseId'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
-        if (body['success'] == true && body['exercises'] != null) {
-          final data = body['exercises'] as List;
-          return data.map((e) => Exercise.fromJson(e)).toList();
+        if (body['success'] == true && body['exercise'] != null) {
+          return Exercise.fromJson(body['exercise']);
         }
         throw Exception('Invalid response format');
+      } else if (response.statusCode == 404) {
+        throw Exception('Exercise not found');
       } else {
-        throw Exception('Failed to load exercises: ${response.statusCode}');
+        throw Exception('Failed to load exercise: ${response.statusCode}');
       }
     } catch (e) {
       rethrow;
