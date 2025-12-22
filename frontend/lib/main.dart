@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'screens/login_screen.dart';
 import 'providers/user_provider.dart';
+import 'providers/workout_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,7 @@ class Journey extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => UserProvider()),
+        ChangeNotifierProvider(create: (context) => WorkoutProvider()),
       ],
       child: MaterialApp(
         title: 'Flutter Demo',

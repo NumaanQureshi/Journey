@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:journey_application/screens/challenges_screen.dart';
-import 'package:journey_application/screens/home_screen.dart';
-import 'package:journey_application/screens/workout_screen.dart';
-import 'package:journey_application/screens/settings_screen.dart';
-import 'package:journey_application/screens/user_analytics_screen.dart';
-import 'package:journey_application/providers/user_provider.dart';
+import 'challenges_screen.dart';
+import 'home_screen.dart';
+import 'workout_screen.dart';
+import 'settings_screen.dart';
+import 'user_analytics_screen.dart';
+import '../providers/user_provider.dart';
 
 class SideMenu extends StatelessWidget {
   final String? currentScreen;

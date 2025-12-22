@@ -76,6 +76,9 @@ class AuthService {
         }),
       );
 
+      debugPrint('SignUp Response Status: ${response.statusCode}');
+      debugPrint('SignUp Response Body: ${response.body}');
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         final responseBody = jsonDecode(response.body);
         if (responseBody is Map<String, dynamic> && responseBody.containsKey('token')) {
@@ -88,8 +91,10 @@ class AuthService {
         // token missing should return false
         return false; 
       }
+      debugPrint('SignUp failed with status ${response.statusCode}');
       return false;
     } catch (e) {
+      debugPrint('SignUp exception: $e');
       return false;
     }
   }
