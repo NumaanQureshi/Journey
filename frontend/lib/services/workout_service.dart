@@ -632,6 +632,80 @@ class WorkoutService {
     }
   }
 
+  /// Update the day order of a single template
+  static Future<WorkoutTemplate> updateTemplateOrder({
+    required int templateId,
+    required int dayOrder,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.put(
+        Uri.parse('${ApiService.workouts()}/templates/$templateId/order'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'day_order': dayOrder,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['template'] != null) {
+          return WorkoutTemplate.fromJson(body['template']);
+        }
+        throw Exception('Invalid response format');
+      } else if (response.statusCode == 403) {
+        throw Exception('Unauthorized: You do not own this template');
+      } else {
+        throw Exception('Failed to update template order: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update the day order of multiple templates in bulk
+  static Future<List<WorkoutTemplate>> updateTemplatesOrder({
+    required List<Map<String, int>> templateOrders,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.put(
+        Uri.parse('${ApiService.workouts()}/templates/reorder'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'templates': templateOrders,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['templates'] != null) {
+          final templates = (body['templates'] as List)
+              .map((t) => WorkoutTemplate.fromJson(t as Map<String, dynamic>))
+              .toList();
+          return templates;
+        }
+        throw Exception('Invalid response format');
+      } else if (response.statusCode == 403) {
+        throw Exception('Unauthorized: You do not own these templates');
+      } else {
+        throw Exception('Failed to update templates order: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Delete a workout template
   static Future<void> deleteTemplate({required int templateId}) async {
     try {
@@ -955,5 +1029,229 @@ class WorkoutService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Phase 3: Create a new workout session
+  static Future<WorkoutSession> createWorkoutSession(
+    int templateId,
+  ) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.post(
+        Uri.parse('${ApiService.workouts()}/sessions'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'template_id': templateId,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['session'] != null) {
+          return WorkoutSession.fromJson(body['session']);
+        }
+        throw Exception('Invalid response format');
+      } else {
+        throw Exception('Failed to create session: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Phase 3: Pre-create empty workout sets for a session based on template
+  static Future<List<WorkoutSet>> preCreateWorkoutSets(
+    int sessionId,
+    int templateId,
+  ) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.post(
+        Uri.parse('${ApiService.workouts()}/sessions/$sessionId/presets'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'template_id': templateId,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['sets'] != null) {
+          final sets = body['sets'] as List;
+          return sets.map((e) => WorkoutSet.fromJson(e)).toList();
+        }
+        throw Exception('Invalid response format');
+      } else {
+        throw Exception('Failed to create sets: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Phase 3: Log a workout set
+  static Future<WorkoutSet> logWorkoutSet(
+    int sessionId,
+    int exerciseId,
+    int setNumber, {
+    required int? repsCompleted,
+    required double? weightLb,
+    int? rpe,
+    bool isWarmup = false,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.post(
+        Uri.parse('${ApiService.workouts()}/sessions/$sessionId/sets'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'exercise_id': exerciseId,
+          'set_number': setNumber,
+          'reps_completed': repsCompleted,
+          'weight_lb': weightLb,
+          'rpe': rpe,
+          'is_warmup': isWarmup,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['set'] != null) {
+          return WorkoutSet.fromJson(body['set']);
+        }
+        throw Exception('Invalid response format');
+      } else {
+        throw Exception('Failed to log set: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Phase 3: Finish a workout session and calculate stats
+  static Future<WorkoutSession> finishWorkoutSession(
+    int sessionId, {
+    String? notes,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.patch(
+        Uri.parse('${ApiService.workouts()}/sessions/$sessionId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'status': 'completed',
+          'notes': notes,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['session'] != null) {
+          return WorkoutSession.fromJson(body['session']);
+        }
+        throw Exception('Invalid response format');
+      } else {
+        throw Exception('Failed to finish session: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Phase 3: Get all sets for a session
+  static Future<List<WorkoutSet>> getSessionSets(int sessionId) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.get(
+        Uri.parse('${ApiService.workouts()}/sessions/$sessionId/sets'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['sets'] != null) {
+          final sets = body['sets'] as List;
+          return sets.map((e) => WorkoutSet.fromJson(e)).toList();
+        }
+        throw Exception('Invalid response format');
+      } else {
+        throw Exception('Failed to fetch sets: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+}
+
+/// WorkoutSet - represents a single set of an exercise
+class WorkoutSet {
+  final int id;
+  final int sessionId;
+  final int exerciseId;
+  final int setNumber;
+  final int? repsCompleted;
+  final double? weightLb;
+  final int? rpe;
+  final bool isWarmup;
+  final DateTime createdAt;
+
+  WorkoutSet({
+    required this.id,
+    required this.sessionId,
+    required this.exerciseId,
+    required this.setNumber,
+    this.repsCompleted,
+    this.weightLb,
+    this.rpe,
+    this.isWarmup = false,
+    required this.createdAt,
+  });
+
+  factory WorkoutSet.fromJson(Map<String, dynamic> json) {
+    return WorkoutSet(
+      id: json['id'],
+      sessionId: json['session_id'],
+      exerciseId: json['exercise_id'],
+      setNumber: json['set_number'],
+      repsCompleted: json['reps_completed'],
+      weightLb: json['weight_lb']?.toDouble(),
+      rpe: json['rpe'],
+      isWarmup: json['is_warmup'] ?? false,
+      createdAt: DateTime.parse(json['created_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'session_id': sessionId,
+      'exercise_id': exerciseId,
+      'set_number': setNumber,
+      'reps_completed': repsCompleted,
+      'weight_lb': weightLb,
+      'rpe': rpe,
+      'is_warmup': isWarmup,
+    };
   }
 }

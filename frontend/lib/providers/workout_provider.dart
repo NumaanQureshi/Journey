@@ -260,6 +260,88 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
+  /// Update a single template's day order
+  Future<bool> updateTemplateOrder({
+    required int templateId,
+    required int dayOrder,
+  }) async {
+    if (activeProgram == null) {
+      error = 'No active program selected';
+      return false;
+    }
+
+    try {
+      final updatedTemplate = await WorkoutService.updateTemplateOrder(
+        templateId: templateId,
+        dayOrder: dayOrder,
+      );
+      
+      // Update the template in the active program
+      final templateIndex = activeProgram!.templates.indexWhere((t) => t.id == templateId);
+      if (templateIndex != -1) {
+        final updatedTemplates = List<WorkoutTemplate>.from(activeProgram!.templates);
+        updatedTemplates[templateIndex] = updatedTemplate;
+        activeProgram = Program(
+          id: activeProgram!.id,
+          userId: activeProgram!.userId,
+          name: activeProgram!.name,
+          description: activeProgram!.description,
+          isActive: activeProgram!.isActive,
+          createdAt: activeProgram!.createdAt,
+          templates: updatedTemplates,
+        );
+      }
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      debugPrint('Error updating template order: $e');
+      return false;
+    }
+  }
+
+  /// Update multiple templates' day order in bulk
+  Future<bool> updateTemplatesOrder({
+    required List<WorkoutTemplate> orderedTemplates,
+  }) async {
+    if (activeProgram == null) {
+      error = 'No active program selected';
+      return false;
+    }
+
+    try {
+      final templateOrders = orderedTemplates
+          .map((template) => {
+                'id': template.id,
+                'day_order': orderedTemplates.indexOf(template) + 1,
+              })
+          .toList();
+
+      final updatedTemplates = await WorkoutService.updateTemplatesOrder(
+        templateOrders: templateOrders,
+      );
+      
+      // Update the active program with the new order
+      activeProgram = Program(
+        id: activeProgram!.id,
+        userId: activeProgram!.userId,
+        name: activeProgram!.name,
+        description: activeProgram!.description,
+        isActive: activeProgram!.isActive,
+        createdAt: activeProgram!.createdAt,
+        templates: updatedTemplates,
+      );
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      debugPrint('Error updating templates order: $e');
+      return false;
+    }
+  }
+
   /// Clear error message
   void clearError() {
     error = null;
