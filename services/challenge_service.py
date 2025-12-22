@@ -121,8 +121,7 @@ def update_journey_master(user_id, cur):
     row = cur.fetchone()
 
     if row:
-        # Get the first value from the row dictionary (the actual count)
-        completed_count = list(row.values())[0] 
+        completed_count = row[0] 
     else:
         completed_count = 0
 
