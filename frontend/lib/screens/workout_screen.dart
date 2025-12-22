@@ -67,7 +67,6 @@ class _WorkoutContentState extends State<WorkoutContent>
   
   final AiService _aiService = AiService();
   String _motivationalMessage = 'Ready to crush it? 💪';
-  bool _isLoadingMessage = true;
 
   @override
   void initState() {
@@ -101,16 +100,12 @@ class _WorkoutContentState extends State<WorkoutContent>
       if (mounted) {
         setState(() {
           _motivationalMessage = message;
-          _isLoadingMessage = false;
         });
         // Trigger fade-in animation
         _fadeController.forward();
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoadingMessage = false;
-        });
         // Keep default message and fade it in anyway
         _fadeController.forward();
       }

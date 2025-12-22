@@ -22,15 +22,15 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
     // Load templates and exercises when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<WorkoutProvider>();
-      print('DEBUG: ProgramDetailScreen initState - loading templates and exercises');
+      debugPrint('DEBUG: ProgramDetailScreen initState - loading templates and exercises');
       provider.setActiveProgram(widget.program);
       provider.loadTemplatesForActiveProgram();
       // Ensure exercises are loaded for the dialog
       if (provider.exercises.isEmpty) {
-        print('DEBUG: Exercises empty, calling loadExercises()');
+        debugPrint('DEBUG: Exercises empty, calling loadExercises()');
         provider.loadExercises();
       } else {
-        print('DEBUG: Exercises already loaded: ${provider.exercises.length} exercises');
+        debugPrint('DEBUG: Exercises already loaded: ${provider.exercises.length} exercises');
       }
     });
   }
@@ -574,17 +574,17 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
 
   /// Show dialog to add an exercise to a template
   void _showAddExerciseDialog(BuildContext context, WorkoutTemplate template) {
-    print('DEBUG: _showAddExerciseDialog called');
+    debugPrint('DEBUG: _showAddExerciseDialog called');
     final provider = context.read<WorkoutProvider>();
-    print('DEBUG: Current exercises in provider: ${provider.exercises.length}');
-    print('DEBUG: Provider isLoading: ${provider.isLoading}');
+    debugPrint('DEBUG: Current exercises in provider: ${provider.exercises.length}');
+    debugPrint('DEBUG: Provider isLoading: ${provider.isLoading}');
     showDialog(
       context: context,
       builder: (context) {
-        print('DEBUG: Dialog builder called');
+        debugPrint('DEBUG: Dialog builder called');
         return Consumer<WorkoutProvider>(
           builder: (context, providerInDialog, _) {
-            print('DEBUG: Consumer builder called, exercises: ${providerInDialog.exercises.length}');
+            debugPrint('DEBUG: Consumer builder called, exercises: ${providerInDialog.exercises.length}');
             return _AddExerciseDialog(
               template: template,
               provider: providerInDialog,
@@ -661,7 +661,7 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
 
     if (session != null && mounted) {
       // Navigate to workout screen (will implement this next)
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(this.context).showSnackBar(
         SnackBar(
           content: Text('Workout started! Session ID: ${session.id}'),
           backgroundColor: Colors.orangeAccent,
@@ -754,13 +754,13 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
   Widget build(BuildContext context) {
     final provider = widget.provider;
     
-    print('DEBUG: _AddExerciseDialog build() called');
-    print('DEBUG: Provider exercises: ${provider.exercises.length}');
-    print('DEBUG: Provider isLoading: ${provider.isLoading}');
+    debugPrint('DEBUG: _AddExerciseDialog build() called');
+    debugPrint('DEBUG: Provider exercises: ${provider.exercises.length}');
+    debugPrint('DEBUG: Provider isLoading: ${provider.isLoading}');
     
     // If exercises are still loading, show a loading indicator
     if (provider.exercises.isEmpty && provider.isLoading) {
-      print('DEBUG: Showing loading indicator');
+      debugPrint('DEBUG: Showing loading indicator');
       return AlertDialog(
         backgroundColor: const Color(0xFF2C2C2C),
         title: const Text(
@@ -776,9 +776,9 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
       );
     }
 
-    print('DEBUG: Getting sorted exercises...');
+    debugPrint('DEBUG: Getting sorted exercises...');
     final sortedExercises = getSortedExercises(provider.exercises);
-    print('DEBUG: Sorted exercises: ${sortedExercises.length}');
+    debugPrint('DEBUG: Sorted exercises: ${sortedExercises.length}');
 
     final muscles = <String>{'None'};
     final difficulties = <String>{'None'};

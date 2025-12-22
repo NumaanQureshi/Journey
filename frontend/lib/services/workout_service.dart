@@ -35,7 +35,7 @@ class Exercise {
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
     // Handle array fields - they may come as arrays or need to be converted
-    List<String>? _parseStringArray(dynamic value) {
+    List<String>? parseStringArray(dynamic value) {
       if (value == null) return null;
       if (value is List) {
         return List<String>.from(value);
@@ -52,10 +52,10 @@ class Exercise {
       difficultyLevel: json['difficulty_level'] ?? json['level'],
       mechanic: json['mechanic'],
       equipment: json['equipment'],
-      primaryMuscles: _parseStringArray(json['primaryMuscles'] ?? json['primary_muscles']),
-      secondaryMuscles: _parseStringArray(json['secondaryMuscles'] ?? json['secondary_muscles']),
-      instructions: _parseStringArray(json['instructions']),
-      images: _parseStringArray(json['images']),
+      primaryMuscles: parseStringArray(json['primaryMuscles'] ?? json['primary_muscles']),
+      secondaryMuscles: parseStringArray(json['secondaryMuscles'] ?? json['secondary_muscles']),
+      instructions: parseStringArray(json['instructions']),
+      images: parseStringArray(json['images']),
     );
   }
 }

@@ -125,15 +125,19 @@ class _ProfileState extends State<Profile> {
                           ),
                           onPressed: () async {
                             // Clear user data and token
-                            await context.read<UserProvider>().clearUser();
+                            if (mounted) {
+                              await context.read<UserProvider>().clearUser();
+                            }
                             
                             if (!mounted) return;
                             
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const LoginScreen()),
-                              (Route<dynamic> route) => false,
-                            );
+                            if (mounted) {
+                              Navigator.pushAndRemoveUntil(
+                                this.context,
+                                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                (Route<dynamic> route) => false,
+                              );
+                            }
                           },
                     ),
                   ),

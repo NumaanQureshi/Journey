@@ -59,6 +59,8 @@ class _AppInitializerState extends State<_AppInitializer> {
         // Token is valid - initialize user data and start loading exercises
         if (mounted) {
           await context.read<UserProvider>().initializeUser();
+        }
+        if (mounted) {
           // Start loading exercises in the background (no await - let it load while navigating)
           context.read<WorkoutProvider>().loadExercises();
         }
