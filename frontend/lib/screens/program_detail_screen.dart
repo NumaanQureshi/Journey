@@ -44,7 +44,7 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
         backgroundColor: const Color(0xFF2C2C2C),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.blue),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -368,7 +368,7 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
           ),
           content: SizedBox(
             width: double.maxFinite,
-            child: ReorderableListView(
+            child: ReorderableListView.builder(
               onReorder: (oldIndex, newIndex) {
                 setState(() {
                   if (oldIndex < newIndex) {
@@ -378,10 +378,46 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                   templates.insert(newIndex, template);
                 });
               },
-              children: [
-                for (int index = 0; index < templates.length; index++)
-                  Container(
-                    key: ValueKey(templates[index].id),
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final scale = Tween<double>(begin: 1, end: 1.05).evaluate(animation);
+                    return Transform.scale(
+                      scale: scale,
+                      child: Opacity(
+                        opacity: 0.9,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3A3A3A),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.orangeAccent,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.orangeAccent.withValues(alpha: 0.5),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
+                  child: child,
+                );
+              },
+              itemCount: templates.length,
+              itemBuilder: (context, index) {
+                final template = templates[index];
+                return ReorderableDragStartListener(
+                  key: ValueKey(template.id),
+                  index: index,
+                  child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -394,10 +430,13 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.drag_handle,
-                          color: Colors.orangeAccent,
-                          size: 20,
+                        MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: const Icon(
+                            Icons.drag_handle,
+                            color: Colors.orangeAccent,
+                            size: 24,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -405,14 +444,14 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${index + 1}. ${templates[index].name}',
+                                '${index + 1}. ${template.name}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               Text(
-                                '${templates[index].exercises.length} exercises',
+                                '${template.exercises.length} exercises',
                                 style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 12,
@@ -424,7 +463,8 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                       ],
                     ),
                   ),
-              ],
+                );
+              },
             ),
           ),
           actions: [
