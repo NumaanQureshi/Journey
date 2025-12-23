@@ -66,7 +66,6 @@ class _WorkoutContentState extends State<WorkoutContent>
   late Animation<double> _ringAnimation;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  bool _isHolding = false;
   
   final AiService _aiService = AiService();
   String _motivationalMessage = 'Ready to crush it? 💪';
@@ -91,9 +90,16 @@ class _WorkoutContentState extends State<WorkoutContent>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
     );
     
-    // Fetch motivational message and next template asynchronously
+    // Load programs and exercises when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = context.read<WorkoutProvider>();
+      await provider.loadPrograms();
+      // Load next template after programs are loaded
+      _loadNextTemplate();
+    });
+    
+    // Fetch motivational message asynchronously
     _fetchMotivationalMessage();
-    _loadNextTemplate();
   }
 
   Future<void> _loadNextTemplate() async {
@@ -144,32 +150,6 @@ class _WorkoutContentState extends State<WorkoutContent>
     _ringController.dispose();
     _fadeController.dispose();
     super.dispose();
-  }
-
-  void _onPointerDown() {
-    if (!_isHolding && _nextTemplate != null) {
-      _isHolding = true;
-      _ringController.forward();
-    }
-  }
-
-  void _onPointerUp() {
-    if (_isHolding) {
-      _isHolding = false;
-      
-      // Check if the animation completed (user held for full 2 seconds)
-      if (_ringAnimation.value >= 1.0 && _nextTemplate != null) {
-        // Navigate to workout session with the next template
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => WorkoutSessionScreen(templateId: _nextTemplate!.id),
-          ),
-        );
-      }
-      
-      _ringController.reverse();
-    }
   }
 
   void _startWorkoutManually() {
@@ -357,31 +337,25 @@ class _WorkoutContentState extends State<WorkoutContent>
                           SizedBox(
                             width: 200,
                             height: 200,
-                            child: Listener(
-                              onPointerDown: (_) => _onPointerDown(),
-                              onPointerUp: (_) => _onPointerUp(),
-                              onPointerCancel: (_) => _onPointerUp(),
-                              child: ElevatedButton(
-                                onPressed: _isLoadingTemplate || _nextTemplate == null
-                                    ? null
-                                    : _startWorkoutManually,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color.fromARGB(255, 24, 24, 24),
-                                  shadowColor: Colors.red,
-                                  surfaceTintColor: const Color.fromARGB(255, 37, 12, 10),
-                                  elevation: 15,
-                                  shape: const CircleBorder(),
-                                  side: const BorderSide(color: Colors.orange, width: 2),
-                                  disabledBackgroundColor: const Color.fromARGB(255, 24, 24, 24),
-                                ),
-                                child: Text(
-                                  _isLoadingTemplate ? 'Loading...' : 'Start Session',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.mavenPro(
-                                    color: _nextTemplate == null ? Colors.white30 : Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                            child: ElevatedButton(
+                              onPressed: _isLoadingTemplate || _nextTemplate == null
+                                  ? null
+                                  : _startWorkoutManually,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                elevation: 0,
+                                shape: const CircleBorder(),
+                                side: const BorderSide(color: Colors.orange, width: 2),
+                                disabledBackgroundColor: Colors.transparent,
+                              ),
+                              child: Text(
+                                _isLoadingTemplate ? 'Loading...' : 'Start Session',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.mavenPro(
+                                  color: _nextTemplate == null ? Colors.white30 : Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
