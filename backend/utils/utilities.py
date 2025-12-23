@@ -25,7 +25,10 @@ def token_required(f):
             print(f"DEBUG MODE: AUTH BYPASSED for User ID: {debug_user_id}")
             try:
                 user_id = int(debug_user_id)
-                return f(user_id, *args, **kwargs) # returns debug user
+                # Only inject user_id if not already in kwargs (from URL parameter)
+                if 'user_id' not in kwargs:
+                    kwargs['user_id'] = user_id
+                return f(*args, **kwargs) # returns debug user
             # ensure debug user is int = 4
             except ValueError:
                 return jsonify({'success': False, 'error': 'DEBUG_USER_ID must be an integer'}), 500
@@ -50,7 +53,10 @@ def token_required(f):
         except jwt.InvalidTokenError:
             return jsonify({'success': False, 'error': 'Invalid token!'}), 401
 
-        return f(user_id, *args, **kwargs)
+        # Only inject user_id if not already in kwargs (from URL parameter)
+        if 'user_id' not in kwargs:
+            kwargs['user_id'] = user_id
+        return f(*args, **kwargs)
 
     return decorated
 

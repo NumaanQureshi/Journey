@@ -6,6 +6,27 @@ from dotenv import load_dotenv
 load_dotenv()
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
+def convert_to_iso8601(dt):
+    """Convert datetime object to ISO 8601 format string."""
+    if dt is None:
+        return None
+    if isinstance(dt, str):
+        return dt
+    if isinstance(dt, datetime.datetime):
+        return dt.isoformat() + 'Z' if dt.tzinfo is None else dt.isoformat()
+    return str(dt)
+
+def convert_dict_dates_to_iso8601(data):
+    """Recursively convert all datetime objects in a dict/list to ISO 8601 format."""
+    if isinstance(data, dict):
+        return {key: convert_dict_dates_to_iso8601(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [convert_dict_dates_to_iso8601(item) for item in data]
+    elif isinstance(data, datetime.datetime):
+        return convert_to_iso8601(data)
+    else:
+        return data
+
 def calculate_age(year, month, day):
     """Calculates age from birth date components."""
     if year is None or month is None or day is None:
