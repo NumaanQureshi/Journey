@@ -142,7 +142,7 @@ class _LogCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Convert UTC time from database to local timezone
-    final localStartTime = WorkoutService.convertToLocalTime(session.startTime) ?? DateTime.now();
+    final localStartTime = WorkoutService.convertToLocalTime(session.startTime);
     final isCompleted = session.status == 'completed';
     
     return Card(
