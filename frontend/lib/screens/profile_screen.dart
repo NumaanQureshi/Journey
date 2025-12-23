@@ -123,12 +123,21 @@ class _ProfileState extends State<Profile> {
                             backgroundColor: Colors.redAccent,
                             foregroundColor: Colors.white,
                           ),
-                          onPressed: () {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const LoginScreen()),
-                              (Route<dynamic> route) => false,
-                            );
+                          onPressed: () async {
+                            // Clear user data and token
+                            if (mounted) {
+                              await context.read<UserProvider>().clearUser();
+                            }
+                            
+                            if (!mounted) return;
+                            
+                            if (mounted) {
+                              Navigator.pushAndRemoveUntil(
+                                this.context,
+                                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                (Route<dynamic> route) => false,
+                              );
+                            }
                           },
                     ),
                   ),

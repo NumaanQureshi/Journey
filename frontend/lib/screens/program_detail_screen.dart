@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/workout_provider.dart';
 import '../services/workout_service.dart';
+import 'workout_session.dart' as workout_screens;
 
 class ProgramDetailScreen extends StatefulWidget {
   final Program program;
@@ -22,15 +23,15 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
     // Load templates and exercises when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<WorkoutProvider>();
-      print('DEBUG: ProgramDetailScreen initState - loading templates and exercises');
+      debugPrint('DEBUG: ProgramDetailScreen initState - loading templates and exercises');
       provider.setActiveProgram(widget.program);
       provider.loadTemplatesForActiveProgram();
       // Ensure exercises are loaded for the dialog
       if (provider.exercises.isEmpty) {
-        print('DEBUG: Exercises empty, calling loadExercises()');
+        debugPrint('DEBUG: Exercises empty, calling loadExercises()');
         provider.loadExercises();
       } else {
-        print('DEBUG: Exercises already loaded: ${provider.exercises.length} exercises');
+        debugPrint('DEBUG: Exercises already loaded: ${provider.exercises.length} exercises');
       }
     });
   }
@@ -43,7 +44,7 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
         backgroundColor: const Color(0xFF2C2C2C),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.blue),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -107,9 +108,19 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle, color: Colors.orangeAccent),
-                      onPressed: () => _showCreateTemplateDialog(context, provider),
+                    Row(
+                      children: [
+                        if (templates.isNotEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.reorder, color: Colors.orangeAccent),
+                            tooltip: 'Reorder workouts',
+                            onPressed: () => _showReorderTemplatesDialog(context, provider),
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle, color: Colors.orangeAccent),
+                          onPressed: () => _showCreateTemplateDialog(context, provider),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -338,6 +349,165 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Show dialog to reorder templates
+  void _showReorderTemplatesDialog(BuildContext context, WorkoutProvider provider) {
+    final templates = List<WorkoutTemplate>.from(provider.activeProgram?.templates ?? []);
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: const Color(0xFF2C2C2C),
+          title: const Text(
+            'Customize Workout Order',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ReorderableListView.builder(
+              onReorder: (oldIndex, newIndex) {
+                setState(() {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
+                  final template = templates.removeAt(oldIndex);
+                  templates.insert(newIndex, template);
+                });
+              },
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final scale = Tween<double>(begin: 1, end: 1.05).evaluate(animation);
+                    return Transform.scale(
+                      scale: scale,
+                      child: Opacity(
+                        opacity: 0.9,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3A3A3A),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.orangeAccent,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.orangeAccent.withValues(alpha: 0.5),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
+                  child: child,
+                );
+              },
+              itemCount: templates.length,
+              itemBuilder: (context, index) {
+                final template = templates[index];
+                return ReorderableDragStartListener(
+                  key: ValueKey(template.id),
+                  index: index,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3A3A3A),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.orangeAccent.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: const Icon(
+                            Icons.drag_handle,
+                            color: Colors.orangeAccent,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${index + 1}. ${template.name}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '${template.exercises.length} exercises',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orangeAccent,
+              ),
+              onPressed: () async {
+                final nav = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  final success = await provider.updateTemplatesOrder(
+                    orderedTemplates: templates,
+                  );
+                  if (mounted) {
+                    nav.pop();
+                    if (success) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Workout order updated successfully')),
+                      );
+                    } else {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Error: ${provider.error}')),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    nav.pop();
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save Order', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -574,17 +744,17 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
 
   /// Show dialog to add an exercise to a template
   void _showAddExerciseDialog(BuildContext context, WorkoutTemplate template) {
-    print('DEBUG: _showAddExerciseDialog called');
+    debugPrint('DEBUG: _showAddExerciseDialog called');
     final provider = context.read<WorkoutProvider>();
-    print('DEBUG: Current exercises in provider: ${provider.exercises.length}');
-    print('DEBUG: Provider isLoading: ${provider.isLoading}');
+    debugPrint('DEBUG: Current exercises in provider: ${provider.exercises.length}');
+    debugPrint('DEBUG: Provider isLoading: ${provider.isLoading}');
     showDialog(
       context: context,
       builder: (context) {
-        print('DEBUG: Dialog builder called');
+        debugPrint('DEBUG: Dialog builder called');
         return Consumer<WorkoutProvider>(
           builder: (context, providerInDialog, _) {
-            print('DEBUG: Consumer builder called, exercises: ${providerInDialog.exercises.length}');
+            debugPrint('DEBUG: Consumer builder called, exercises: ${providerInDialog.exercises.length}');
             return _AddExerciseDialog(
               template: template,
               provider: providerInDialog,
@@ -656,18 +826,14 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
 
   /// Start a workout session
   void _startWorkout(BuildContext context, int templateId) async {
-    final provider = context.read<WorkoutProvider>();
-    final session = await provider.startWorkout(templateId);
+    if (!mounted) return;
 
-    if (session != null && mounted) {
-      // Navigate to workout screen (will implement this next)
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Workout started! Session ID: ${session.id}'),
-          backgroundColor: Colors.orangeAccent,
-        ),
-      );
-    }
+    Navigator.push(
+      this.context,
+      MaterialPageRoute(
+        builder: (context) => workout_screens.WorkoutSessionScreen(templateId: templateId),
+      ),
+    );
   }
 }
 
@@ -688,12 +854,14 @@ class _AddExerciseDialog extends StatefulWidget {
 class _AddExerciseDialogState extends State<_AddExerciseDialog> {
   late int? selectedExerciseId;
   late String sortBy;
-  late String? filterForce;
+  late String? filterDifficulty;
   late String? filterMuscle;
   late String searchQuery;
+  late bool showSortOptions;
+  late bool showFilterOptions;
 
-  final setsController = TextEditingController(text: '3');
-  final repsController = TextEditingController(text: '8-12');
+  final setsController = TextEditingController();
+  final repsController = TextEditingController();
   final weightController = TextEditingController();
   final searchController = TextEditingController();
 
@@ -702,9 +870,11 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
     super.initState();
     selectedExerciseId = null;
     sortBy = 'name';
-    filterForce = null;
+    filterDifficulty = null;
     filterMuscle = null;
     searchQuery = '';
+    showSortOptions = false;
+    showFilterOptions = false;
   }
 
   @override
@@ -719,18 +889,20 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
   /// Get sorted and filtered exercises
   List<Exercise> getSortedExercises(List<Exercise> exercises) {
     var filtered = exercises.where((ex) {
-      final matchesSearch = searchQuery.isEmpty ||
-          ex.name.toLowerCase().contains(searchQuery.toLowerCase());
-      final matchesForce = filterForce == null || ex.force == filterForce;
+      // Check if all search terms are present in the exercise name
+      final matchesSearch = searchQuery.isEmpty || 
+          searchQuery.toLowerCase().split(' ').every((term) =>
+              term.isEmpty || ex.name.toLowerCase().contains(term));
+      final matchesDifficulty = filterDifficulty == null || ex.difficultyLevel == filterDifficulty;
       final matchesMuscle = filterMuscle == null ||
           (ex.primaryMuscles?.contains(filterMuscle) ?? false);
 
-      return matchesSearch && matchesForce && matchesMuscle;
+      return matchesSearch && matchesDifficulty && matchesMuscle;
     }).toList();
 
     filtered.sort((a, b) {
-      if (sortBy == 'force') {
-        return (a.force ?? '').compareTo(b.force ?? '');
+      if (sortBy == 'difficulty') {
+        return (a.difficultyLevel ?? '').compareTo(b.difficultyLevel ?? '');
       } else if (sortBy == 'primaryMuscle') {
         final aMuscle =
             a.primaryMuscles?.isNotEmpty ?? false ? a.primaryMuscles!.first : '';
@@ -748,13 +920,13 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
   Widget build(BuildContext context) {
     final provider = widget.provider;
     
-    print('DEBUG: _AddExerciseDialog build() called');
-    print('DEBUG: Provider exercises: ${provider.exercises.length}');
-    print('DEBUG: Provider isLoading: ${provider.isLoading}');
+    debugPrint('DEBUG: _AddExerciseDialog build() called');
+    debugPrint('DEBUG: Provider exercises: ${provider.exercises.length}');
+    debugPrint('DEBUG: Provider isLoading: ${provider.isLoading}');
     
     // If exercises are still loading, show a loading indicator
     if (provider.exercises.isEmpty && provider.isLoading) {
-      print('DEBUG: Showing loading indicator');
+      debugPrint('DEBUG: Showing loading indicator');
       return AlertDialog(
         backgroundColor: const Color(0xFF2C2C2C),
         title: const Text(
@@ -770,15 +942,15 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
       );
     }
 
-    print('DEBUG: Getting sorted exercises...');
+    debugPrint('DEBUG: Getting sorted exercises...');
     final sortedExercises = getSortedExercises(provider.exercises);
-    print('DEBUG: Sorted exercises: ${sortedExercises.length}');
+    debugPrint('DEBUG: Sorted exercises: ${sortedExercises.length}');
 
     final muscles = <String>{'None'};
-    final forces = <String>{'None'};
+    final difficulties = <String>{'None'};
 
     for (var ex in provider.exercises) {
-      if (ex.force != null) forces.add(ex.force!);
+      if (ex.difficultyLevel != null) difficulties.add(ex.difficultyLevel!);
       if (ex.primaryMuscles != null) {
         muscles.addAll(ex.primaryMuscles!);
       }
@@ -816,123 +988,170 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              // Sort buttons
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    FilterChip(
-                      label: const Text('Name'),
-                      selected: sortBy == 'name',
-                      onSelected: (_) {
-                        setState(() {
-                          sortBy = 'name';
-                        });
-                      },
-                      backgroundColor: const Color(0xFF3A3A3A),
-                      selectedColor: Colors.orangeAccent,
-                      labelStyle: TextStyle(
-                        color: sortBy == 'name' ? Colors.black : Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Force'),
-                      selected: sortBy == 'force',
-                      onSelected: (_) {
-                        setState(() {
-                          sortBy = 'force';
-                        });
-                      },
-                      backgroundColor: const Color(0xFF3A3A3A),
-                      selectedColor: Colors.orangeAccent,
-                      labelStyle: TextStyle(
-                        color: sortBy == 'force' ? Colors.black : Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Muscle'),
-                      selected: sortBy == 'primaryMuscle',
-                      onSelected: (_) {
-                        setState(() {
-                          sortBy = 'primaryMuscle';
-                        });
-                      },
-                      backgroundColor: const Color(0xFF3A3A3A),
-                      selectedColor: Colors.orangeAccent,
-                      labelStyle: TextStyle(
-                        color: sortBy == 'primaryMuscle'
-                            ? Colors.black
-                            : Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Filter dropdowns
+              // Sort and Filter buttons
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<String?>(
-                      dropdownColor: const Color(0xFF2C2C2C),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Force',
-                        hintStyle: const TextStyle(color: Colors.white70),
-                        border: const OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.white70),
-                        ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      initialValue: filterForce,
-                      items: forces.map((f) {
-                        return DropdownMenuItem<String?>(
-                          value: f == 'None' ? null : f,
-                          child: Text(f),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
+                    child: ElevatedButton.icon(
+                      onPressed: () {
                         setState(() {
-                          filterForce = value;
+                          showSortOptions = !showSortOptions;
+                          showFilterOptions = false;
                         });
                       },
+                      icon: const Icon(Icons.sort),
+                      label: const Text('Sort By'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: showSortOptions ? Colors.orangeAccent : const Color(0xFF3A3A3A),
+                        foregroundColor: showSortOptions ? Colors.black : Colors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: DropdownButtonFormField<String?>(
-                      dropdownColor: const Color(0xFF2C2C2C),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Muscle',
-                        hintStyle: const TextStyle(color: Colors.white70),
-                        border: const OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.white70),
-                        ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      initialValue: filterMuscle,
-                      items: muscles.toList().map((m) {
-                        return DropdownMenuItem<String?>(
-                          value: m == 'None' ? null : m,
-                          child: Text(m),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
+                    child: ElevatedButton.icon(
+                      onPressed: () {
                         setState(() {
-                          filterMuscle = value;
+                          showFilterOptions = !showFilterOptions;
+                          showSortOptions = false;
                         });
                       },
+                      icon: const Icon(Icons.filter_list),
+                      label: const Text('Filter'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: showFilterOptions ? Colors.orangeAccent : const Color(0xFF3A3A3A),
+                        foregroundColor: showFilterOptions ? Colors.black : Colors.white,
+                      ),
                     ),
                   ),
                 ],
               ),
+              if (showSortOptions) ...[
+                const SizedBox(height: 12),
+                // Sort options
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      FilterChip(
+                        label: const Text('Name'),
+                        selected: sortBy == 'name',
+                        onSelected: (_) {
+                          setState(() {
+                            sortBy = 'name';
+                          });
+                        },
+                        backgroundColor: const Color(0xFF3A3A3A),
+                        selectedColor: Colors.orangeAccent,
+                        labelStyle: TextStyle(
+                          color: sortBy == 'name' ? Colors.black : Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('Difficulty'),
+                        selected: sortBy == 'difficulty',
+                        onSelected: (_) {
+                          setState(() {
+                            sortBy = 'difficulty';
+                          });
+                        },
+                        backgroundColor: const Color(0xFF3A3A3A),
+                        selectedColor: Colors.orangeAccent,
+                        labelStyle: TextStyle(
+                          color: sortBy == 'difficulty' ? Colors.black : Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('Muscle'),
+                        selected: sortBy == 'primaryMuscle',
+                        onSelected: (_) {
+                          setState(() {
+                            sortBy = 'primaryMuscle';
+                          });
+                        },
+                        backgroundColor: const Color(0xFF3A3A3A),
+                        selectedColor: Colors.orangeAccent,
+                        labelStyle: TextStyle(
+                          color: sortBy == 'primaryMuscle'
+                              ? Colors.black
+                              : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (showFilterOptions) ...[
+                const SizedBox(height: 12),
+                // Filter dropdowns
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String?>(
+                        dropdownColor: const Color(0xFF2C2C2C),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Difficulty',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          hintText: 'Any',
+                          hintStyle: const TextStyle(color: Colors.white70),
+                          border: const OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.white70),
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        initialValue: filterDifficulty,
+                        items: difficulties.map((d) {
+                          return DropdownMenuItem<String?>(
+                            value: d == 'None' ? null : d,
+                            child: Text(d == 'None' ? 'Any' : d),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            filterDifficulty = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonFormField<String?>(
+                        dropdownColor: const Color(0xFF2C2C2C),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Muscle',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          hintText: 'Any',
+                          hintStyle: const TextStyle(color: Colors.white70),
+                          border: const OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.white70),
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        initialValue: filterMuscle,
+                        items: muscles.toList().map((m) {
+                          return DropdownMenuItem<String?>(
+                            value: m == 'None' ? null : m,
+                            child: Text(m == 'None' ? 'Any' : m),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            filterMuscle = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
               // Exercise list
               Container(
@@ -997,7 +1216,7 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
                                             ),
                                           ),
                                           Text(
-                                            '$primaryMuscle${exercise.force != null ? ' • ${exercise.force}' : ''}',
+                                            '$primaryMuscle${exercise.difficultyLevel != null ? ' • ${exercise.difficultyLevel}' : ''}',
                                             style: const TextStyle(
                                               color: Colors.white70,
                                               fontSize: 12,
@@ -1021,31 +1240,44 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
                       ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: setsController,
-                style: const TextStyle(color: Colors.white),
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Sets',
-                  hintStyle: const TextStyle(color: Colors.white70),
-                  border: const OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.white70),
+              // Sets and Reps side by side
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: setsController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Sets',
+                        labelStyle: const TextStyle(color: Colors.white70),
+                        hintText: 'e.g., 3',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: const OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.white70),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: repsController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Reps (e.g., 8-12)',
-                  hintStyle: const TextStyle(color: Colors.white70),
-                  border: const OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.white70),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: repsController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Reps',
+                        labelStyle: const TextStyle(color: Colors.white70),
+                        hintText: 'e.g., 8-12',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: const OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.white70),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 12),
               TextField(
@@ -1086,7 +1318,7 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
             final messenger = ScaffoldMessenger.of(context);
             final prov = context.read<WorkoutProvider>();
             try {
-              await WorkoutService.addExerciseToTemplate(
+              await prov.addExerciseToTemplate(
                 templateId: widget.template.id,
                 exerciseId: selectedExerciseId!,
                 targetSets: int.tryParse(setsController.text) ?? 3,
@@ -1096,7 +1328,6 @@ class _AddExerciseDialogState extends State<_AddExerciseDialog> {
               );
               if (mounted) {
                 nav.pop();
-                await prov.loadTemplatesForActiveProgram();
                 messenger.showSnackBar(
                   const SnackBar(content: Text('Exercise added successfully')),
                 );
