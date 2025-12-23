@@ -16,9 +16,35 @@ class WorkoutProvider extends ChangeNotifier {
 
     try {
       programs = await WorkoutService.getPrograms();
-      // Set first program as active if available
-      if (programs.isNotEmpty && activeProgram == null) {
-        activeProgram = programs.first;
+      
+      // Load templates for each program
+      for (int i = 0; i < programs.length; i++) {
+        try {
+          final templates = await WorkoutService.getTemplatesForProgram(programs[i].id);
+          programs[i] = Program(
+            id: programs[i].id,
+            userId: programs[i].userId,
+            name: programs[i].name,
+            description: programs[i].description,
+            isActive: programs[i].isActive,
+            createdAt: programs[i].createdAt,
+            templates: templates,
+          );
+          debugPrint('DEBUG: Loaded ${templates.length} templates for program "${programs[i].name}"');
+        } catch (e) {
+          debugPrint('DEBUG: Error loading templates for program ${programs[i].id}: $e');
+          // Continue with empty templates list
+        }
+      }
+      
+      // Find the currently active program from backend
+      if (programs.isNotEmpty) {
+        final activeProgramFromBackend = programs.firstWhere(
+          (p) => p.isActive == true,
+          orElse: () => programs.first,
+        );
+        activeProgram = activeProgramFromBackend;
+        debugPrint('DEBUG: Set active program to "${activeProgram?.name}" (id: ${activeProgram?.id}, templates: ${activeProgram?.templates.length})');
       }
     } catch (e) {
       error = e.toString();
@@ -30,8 +56,13 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   /// Load all available exercises with pagination
-  /// Fetches exercises in batches of 100 to handle large datasets
   Future<void> loadExercises() async {
+    // Skip if already loaded
+    if (exercises.isNotEmpty) {
+      debugPrint('DEBUG: Exercises already loaded (${exercises.length} total), skipping reload');
+      return;
+    }
+
     isLoading = true;
     error = null;
     notifyListeners();
@@ -39,7 +70,7 @@ class WorkoutProvider extends ChangeNotifier {
     try {
       exercises = [];
       int offset = 0;
-      const int batchSize = 100;  // Reduced from 500 to avoid large response issues
+      const int batchSize = 500; 
       bool hasMore = true;
 
       while (hasMore) {
@@ -60,9 +91,8 @@ class WorkoutProvider extends ChangeNotifier {
           if (batch.length < batchSize) {
             hasMore = false;
           }
-          // Add a longer delay between requests to let server close connections properly
           if (hasMore) {
-            await Future.delayed(const Duration(milliseconds: 500));
+            await Future.delayed(const Duration(milliseconds: 100));
           }
         }
       }
@@ -108,6 +138,83 @@ class WorkoutProvider extends ChangeNotifier {
   void setActiveProgram(Program program) {
     activeProgram = program;
     notifyListeners();
+  }
+
+  /// Set a program as active by ID (deactivates other programs)
+  Future<bool> setActiveProgramById(int programId) async {
+    try {
+      // Find the program to activate
+      final programToActivate = programs.firstWhere(
+        (p) => p.id == programId,
+        orElse: () => throw Exception('Program not found'),
+      );
+
+      debugPrint('DEBUG: Setting program $programId as active');
+
+      // Deactivate all other active programs first
+      for (int i = 0; i < programs.length; i++) {
+        if (programs[i].isActive == true && programs[i].id != programId) {
+          debugPrint('DEBUG: Deactivating program ${programs[i].id}');
+          try {
+            await WorkoutService.updateProgram(
+              programId: programs[i].id,
+              name: programs[i].name,
+              description: programs[i].description,
+              isActive: false,
+            );
+            programs[i] = programs[i].copyWith(isActive: false);
+            debugPrint('DEBUG: Successfully deactivated program ${programs[i].id}');
+          } catch (e) {
+            debugPrint('DEBUG: Warning - Error deactivating program ${programs[i].id}: $e');
+            // Continue anyway, the main activation is more important
+          }
+        }
+      }
+
+      // Then activate the selected program
+      debugPrint('DEBUG: Activating program $programId');
+      final updatedProgram = await WorkoutService.updateProgram(
+        programId: programId,
+        name: programToActivate.name,
+        description: programToActivate.description,
+        isActive: true,
+      );
+
+      // Reload templates for the updated program
+      try {
+        final templates = await WorkoutService.getTemplatesForProgram(programId);
+        debugPrint('DEBUG: Reloaded ${templates.length} templates for active program');
+        final programWithTemplates = Program(
+          id: updatedProgram.id,
+          userId: updatedProgram.userId,
+          name: updatedProgram.name,
+          description: updatedProgram.description,
+          isActive: updatedProgram.isActive,
+          createdAt: updatedProgram.createdAt,
+          templates: templates,
+        );
+        activeProgram = programWithTemplates;
+      } catch (e) {
+        debugPrint('DEBUG: Error reloading templates: $e, using program without templates');
+        activeProgram = updatedProgram;
+      }
+
+      // Update locally
+      final index = programs.indexWhere((p) => p.id == programId);
+      if (index != -1) {
+        programs[index] = activeProgram!;
+      }
+      
+      debugPrint('DEBUG: Successfully set program $programId as active');
+      error = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = 'Failed to set program as active: $e';
+      debugPrint('ERROR: $error');
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Load templates for the active program
@@ -199,8 +306,7 @@ class WorkoutProvider extends ChangeNotifier {
         targetWeightLb: targetWeightLb,
         restSeconds: restSeconds,
       );
-      // Reload programs to get updated data
-      await loadPrograms();
+      await loadTemplatesForActiveProgram();
       return templateExercise;
     } catch (e) {
       error = e.toString();
@@ -219,6 +325,173 @@ class WorkoutProvider extends ChangeNotifier {
       error = e.toString();
       debugPrint('Error starting workout: $e');
       return null;
+    }
+  }
+
+  /// Update a single template's day order
+  Future<bool> updateTemplateOrder({
+    required int templateId,
+    required int dayOrder,
+  }) async {
+    if (activeProgram == null) {
+      error = 'No active program selected';
+      return false;
+    }
+
+    try {
+      final updatedTemplate = await WorkoutService.updateTemplateOrder(
+        templateId: templateId,
+        dayOrder: dayOrder,
+      );
+      
+      // Update the template in the active program
+      final templateIndex = activeProgram!.templates.indexWhere((t) => t.id == templateId);
+      if (templateIndex != -1) {
+        final updatedTemplates = List<WorkoutTemplate>.from(activeProgram!.templates);
+        updatedTemplates[templateIndex] = updatedTemplate;
+        activeProgram = Program(
+          id: activeProgram!.id,
+          userId: activeProgram!.userId,
+          name: activeProgram!.name,
+          description: activeProgram!.description,
+          isActive: activeProgram!.isActive,
+          createdAt: activeProgram!.createdAt,
+          templates: updatedTemplates,
+        );
+      }
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      debugPrint('Error updating template order: $e');
+      return false;
+    }
+  }
+
+  /// Update multiple templates' day order in bulk
+  Future<bool> updateTemplatesOrder({
+    required List<WorkoutTemplate> orderedTemplates,
+  }) async {
+    if (activeProgram == null) {
+      error = 'No active program selected';
+      return false;
+    }
+
+    try {
+      debugPrint('DEBUG: Updating order for ${orderedTemplates.length} templates');
+      
+      // Update each template with its new day_order
+      final updatedTemplates = <WorkoutTemplate>[];
+      for (int i = 0; i < orderedTemplates.length; i++) {
+        final template = orderedTemplates[i];
+        final newDayOrder = i + 1;
+        
+        debugPrint('DEBUG: Updating template ${template.id} to day_order $newDayOrder');
+        
+        try {
+          final updatedTemplate = await WorkoutService.updateTemplate(
+            templateId: template.id,
+            name: template.name,
+            notes: template.notes,
+            dayOrder: newDayOrder,
+          );
+          updatedTemplates.add(updatedTemplate);
+          debugPrint('DEBUG: Successfully updated template ${template.id}');
+        } catch (e) {
+          debugPrint('ERROR: Failed to update template ${template.id}: $e');
+          throw Exception('Failed to update template ${template.name}: $e');
+        }
+      }
+      
+      // Update the active program with the new order
+      activeProgram = Program(
+        id: activeProgram!.id,
+        userId: activeProgram!.userId,
+        name: activeProgram!.name,
+        description: activeProgram!.description,
+        isActive: activeProgram!.isActive,
+        createdAt: activeProgram!.createdAt,
+        templates: updatedTemplates,
+      );
+      
+      debugPrint('DEBUG: Successfully updated all template orders');
+      error = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      debugPrint('Error updating templates order: $e');
+      return false;
+    }
+  }
+
+  /// Get the next template to follow based on completion history
+  /// If no templates have been completed, returns the first template (day_order 1)
+  /// Otherwise returns the next template after the last completed one
+  Future<WorkoutTemplate?> getNextTemplate() async {
+    if (activeProgram == null || activeProgram!.templates.isEmpty) {
+      return null;
+    }
+
+    try {
+      // Get all sessions for the user to find the last completed one
+      final sessions = await WorkoutService.getWorkoutSessions();
+      
+      // Find the most recent completed session
+      WorkoutSession? lastCompletedSession;
+      for (final session in sessions) {
+        if (session.status == 'completed') {
+          if (lastCompletedSession == null ||
+              session.endTime!.isAfter(lastCompletedSession.endTime!)) {
+            lastCompletedSession = session;
+          }
+        }
+      }
+
+      // If no completed sessions, return the first template
+      if (lastCompletedSession == null) {
+        return activeProgram!.templates.isEmpty
+            ? null
+            : activeProgram!.templates.first;
+      }
+
+      // Find the template that was just completed
+      final completedTemplateId = lastCompletedSession.templateId;
+      WorkoutTemplate? completedTemplate;
+      try {
+        completedTemplate = activeProgram!.templates
+            .firstWhere((t) => t.id == completedTemplateId);
+      } catch (e) {
+        completedTemplate = null;
+      }
+
+      if (completedTemplate == null) {
+        // Template was deleted, return first template
+        return activeProgram!.templates.isEmpty
+            ? null
+            : activeProgram!.templates.first;
+      }
+
+      // Get the next template based on day_order
+      final sortedTemplates = List<WorkoutTemplate>.from(activeProgram!.templates);
+      sortedTemplates.sort((a, b) => (a.dayOrder ?? 0).compareTo(b.dayOrder ?? 0));
+
+      final currentIndex = sortedTemplates.indexWhere((t) => t.id == completedTemplate!.id);
+      
+      if (currentIndex == -1 || currentIndex == sortedTemplates.length - 1) {
+        // Completed template is last or not found, cycle back to first
+        return sortedTemplates.isNotEmpty ? sortedTemplates.first : null;
+      }
+
+      // Return the next template in sequence
+      return sortedTemplates[currentIndex + 1];
+    } catch (e) {
+      debugPrint('Error getting next template: $e');
+      // Fallback to first template
+      return activeProgram!.templates.isEmpty
+          ? null
+          : activeProgram!.templates.first;
     }
   }
 
