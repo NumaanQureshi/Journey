@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
-from helper_functions import convert_dict_dates_to_iso8601
+from backend.helper_functions import convert_dict_dates_to_iso8601
 
 # Assuming these are now in your helper_functions or a new utils file
 # (Adjust import paths based on your actual file locations)

@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 from utils.utilities import token_required, get_db_connection
 from utils.sql_loader import load_sql_query
-from helper_functions import convert_dict_dates_to_iso8601
+from backend.helper_functions import convert_dict_dates_to_iso8601
 import datetime
 
 workouts_bp = Blueprint('workouts', __name__)
