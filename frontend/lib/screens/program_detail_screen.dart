@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/workout_provider.dart';
 import '../services/workout_service.dart';
+import 'workout_session.dart' as workout_screens;
 
 class ProgramDetailScreen extends StatefulWidget {
   final Program program;
@@ -43,7 +44,7 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
         backgroundColor: const Color(0xFF2C2C2C),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.blue),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -107,9 +108,19 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle, color: Colors.orangeAccent),
-                      onPressed: () => _showCreateTemplateDialog(context, provider),
+                    Row(
+                      children: [
+                        if (templates.isNotEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.reorder, color: Colors.orangeAccent),
+                            tooltip: 'Reorder workouts',
+                            onPressed: () => _showReorderTemplatesDialog(context, provider),
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle, color: Colors.orangeAccent),
+                          onPressed: () => _showCreateTemplateDialog(context, provider),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -338,6 +349,165 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Show dialog to reorder templates
+  void _showReorderTemplatesDialog(BuildContext context, WorkoutProvider provider) {
+    final templates = List<WorkoutTemplate>.from(provider.activeProgram?.templates ?? []);
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: const Color(0xFF2C2C2C),
+          title: const Text(
+            'Customize Workout Order',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ReorderableListView.builder(
+              onReorder: (oldIndex, newIndex) {
+                setState(() {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
+                  final template = templates.removeAt(oldIndex);
+                  templates.insert(newIndex, template);
+                });
+              },
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final scale = Tween<double>(begin: 1, end: 1.05).evaluate(animation);
+                    return Transform.scale(
+                      scale: scale,
+                      child: Opacity(
+                        opacity: 0.9,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3A3A3A),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.orangeAccent,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.orangeAccent.withValues(alpha: 0.5),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
+                  child: child,
+                );
+              },
+              itemCount: templates.length,
+              itemBuilder: (context, index) {
+                final template = templates[index];
+                return ReorderableDragStartListener(
+                  key: ValueKey(template.id),
+                  index: index,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3A3A3A),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.orangeAccent.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: const Icon(
+                            Icons.drag_handle,
+                            color: Colors.orangeAccent,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${index + 1}. ${template.name}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '${template.exercises.length} exercises',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orangeAccent,
+              ),
+              onPressed: () async {
+                final nav = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  final success = await provider.updateTemplatesOrder(
+                    orderedTemplates: templates,
+                  );
+                  if (mounted) {
+                    nav.pop();
+                    if (success) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Workout order updated successfully')),
+                      );
+                    } else {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Error: ${provider.error}')),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    nav.pop();
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save Order', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -656,18 +826,14 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
 
   /// Start a workout session
   void _startWorkout(BuildContext context, int templateId) async {
-    final provider = context.read<WorkoutProvider>();
-    final session = await provider.startWorkout(templateId);
+    if (!mounted) return;
 
-    if (session != null && mounted) {
-      // Navigate to workout screen (will implement this next)
-      ScaffoldMessenger.of(this.context).showSnackBar(
-        SnackBar(
-          content: Text('Workout started! Session ID: ${session.id}'),
-          backgroundColor: Colors.orangeAccent,
-        ),
-      );
-    }
+    Navigator.push(
+      this.context,
+      MaterialPageRoute(
+        builder: (context) => workout_screens.WorkoutSessionScreen(templateId: templateId),
+      ),
+    );
   }
 }
 

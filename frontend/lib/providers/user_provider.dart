@@ -17,6 +17,8 @@ class Profile {
   final String? injuries;
   final String? availableEquipment;
   final int? preferredWorkoutDays;
+  final double? goalWeightLb;
+  final String? activityIntensity;
 
   Profile({
     this.name,
@@ -29,6 +31,8 @@ class Profile {
     this.injuries,
     this.availableEquipment,
     this.preferredWorkoutDays,
+    this.goalWeightLb,
+    this.activityIntensity,
   });
 
   /// Calculate age from date of birth
@@ -64,6 +68,8 @@ class Profile {
       injuries: json['injuries'],
       availableEquipment: json['available_equipment'],
       preferredWorkoutDays: json['preferred_workout_days'],
+      goalWeightLb: (json['goal_weight_lb'] is num) ? (json['goal_weight_lb'] as num).toDouble() : null,
+      activityIntensity: json['activity_intensity'],
     );
   }
 
@@ -121,6 +127,8 @@ class Profile {
       'injuries': injuries,
       'available_equipment': availableEquipment,
       'preferred_workout_days': preferredWorkoutDays,
+      'goal_weight_lb': goalWeightLb,
+      'activity_intensity': activityIntensity,
     };
   }
 
@@ -135,6 +143,8 @@ class Profile {
     String? injuries,
     String? availableEquipment,
     int? preferredWorkoutDays,
+    double? goalWeightLb,
+    String? activityIntensity,
   }) {
     return Profile(
       name: name ?? this.name,
@@ -147,6 +157,8 @@ class Profile {
       injuries: injuries ?? this.injuries,
       availableEquipment: availableEquipment ?? this.availableEquipment,
       preferredWorkoutDays: preferredWorkoutDays ?? this.preferredWorkoutDays,
+      goalWeightLb: goalWeightLb ?? this.goalWeightLb,
+      activityIntensity: activityIntensity ?? this.activityIntensity,
     );
   }
 }

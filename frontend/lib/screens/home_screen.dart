@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'profile_screen.dart';
 import 'side_menu.dart';
+import 'workout_screen.dart';
 import 'journeyai_screen.dart';
 import '../providers/challenge_provider.dart';
 import 'challenges_screen.dart';
@@ -238,12 +239,6 @@ class _HomeContentState extends State<HomeContent> {
                 ],
               ),
             ),
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            //   children: [
-            //     ...widget.dayLogs.map((log) => buildDayIcon(log)),
-            //   ],
-            // ),
             const SizedBox(height: 60),
 
             Row(
@@ -251,11 +246,10 @@ class _HomeContentState extends State<HomeContent> {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    // Navigate to the workout screen, assuming it's part of the SideMenu navigation
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const Challenges(),
+                        builder: (context) => const Workout(),
                       ), // Placeholder
                     );
                   },

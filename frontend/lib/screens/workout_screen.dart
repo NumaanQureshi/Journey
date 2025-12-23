@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'side_menu.dart';
-import 'workout_session.dart';
 import 'workout_plans.dart';
 import 'dart:core';
 import 'dart:math' as math;
 import 'workout_logs.dart';
+import 'workout_session.dart';
 import '../services/ai_service.dart';
+import '../providers/workout_provider.dart';
+import '../services/workout_service.dart';
 
 class _RingProgressPainter extends CustomPainter {
   final double progress;
@@ -63,10 +66,11 @@ class _WorkoutContentState extends State<WorkoutContent>
   late Animation<double> _ringAnimation;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  bool _isHolding = false;
   
   final AiService _aiService = AiService();
   String _motivationalMessage = 'Ready to crush it? 💪';
+  WorkoutTemplate? _nextTemplate;
+  bool _isLoadingTemplate = true;
 
   @override
   void initState() {
@@ -86,8 +90,37 @@ class _WorkoutContentState extends State<WorkoutContent>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
     );
     
+    // Load programs and exercises when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = context.read<WorkoutProvider>();
+      await provider.loadPrograms();
+      // Load next template after programs are loaded
+      _loadNextTemplate();
+    });
+    
     // Fetch motivational message asynchronously
     _fetchMotivationalMessage();
+  }
+
+  Future<void> _loadNextTemplate() async {
+    try {
+      final provider = context.read<WorkoutProvider>();
+      final nextTemplate = await provider.getNextTemplate();
+      
+      if (mounted) {
+        setState(() {
+          _nextTemplate = nextTemplate;
+          _isLoadingTemplate = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingTemplate = false;
+        });
+        debugPrint('Error loading next template: $e');
+      }
+    }
   }
 
   Future<void> _fetchMotivationalMessage() async {
@@ -119,133 +152,224 @@ class _WorkoutContentState extends State<WorkoutContent>
     super.dispose();
   }
 
-  void _onPointerDown() {
-    if (!_isHolding) {
-      _isHolding = true;
-      _ringController.forward();
-    }
-  }
-
-  void _onPointerUp() {
-    if (_isHolding) {
-      _isHolding = false;
-      
-      // Check if the animation completed (user held for full 2 seconds)
-      if (_ringAnimation.value >= 1.0) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const WorkoutSession(),
-          ),
-        );
-      }
-      
-      _ringController.reverse();
+  void _startWorkoutManually() {
+    if (_nextTemplate != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WorkoutSessionScreen(templateId: _nextTemplate!.id),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // AI Suggestion Card
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Card(
-            color: const Color(0xFF2C2C2C),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Row(
-                children: [
-                  SvgPicture.asset(
-                    'assets/images/updated_journey_logo.svg',
-                    width: 40,
-                    height: 40,
+    return Consumer<WorkoutProvider>(
+      builder: (context, provider, _) {
+        return Column(
+          children: [
+            // AI Suggestion Card
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Card(
+                color: const Color(0xFF2C2C2C),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/images/updated_journey_logo.svg',
+                        width: 40,
+                        height: 40,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: Text(
+                                _motivationalMessage,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
+                ),
+              ),
+            ),
+
+            // Active Program and Template Info
+            if (provider.activeProgram != null)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  color: const Color(0xFF2C2C2C),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Text(
-                            _motivationalMessage,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
+                        Row(
+                          children: [
+                            const Icon(Icons.fitness_center, color: Colors.orangeAccent),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Active Program',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Text(
+                                    provider.activeProgram!.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A1A1A),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Today's Workout",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              if (_isLoadingTemplate)
+                                const SizedBox(
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.orangeAccent,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              else if (_nextTemplate != null)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _nextTemplate!.name,
+                                      style: const TextStyle(
+                                        color: Colors.orangeAccent,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${_nextTemplate!.exercises.length} exercises',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else
+                                const Text(
+                                  'No templates available',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ),
 
-        // Start Session Button
-        Expanded(
-          child: Center(
-            child: SizedBox(
-              width: 300,
-              height: 300,
-              child: AnimatedBuilder(
-                animation: _ringAnimation,
-                builder: (context, child) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Animated progress ring
-                      if (_ringAnimation.value > 0)
-                        CustomPaint(
-                          size: const Size(200, 200),
-                          painter: _RingProgressPainter(
-                            progress: _ringAnimation.value,
-                          ),
-                        ),
-                      // Button with fixed size
-                      SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: Listener(
-                          onPointerDown: (_) => _onPointerDown(),
-                          onPointerUp: (_) => _onPointerUp(),
-                          onPointerCancel: (_) => _onPointerUp(),
-                          child: ElevatedButton(
-                            onPressed: null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(255, 24, 24, 24),
-                              shadowColor: Colors.red,
-                              surfaceTintColor: const Color.fromARGB(255, 37, 12, 10),
-                              elevation: 15,
-                              shape: const CircleBorder(),
-                              side: const BorderSide(color: Colors.orange, width: 2),
+            // Start Session Button
+            Expanded(
+              child: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: AnimatedBuilder(
+                    animation: _ringAnimation,
+                    builder: (context, child) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Animated progress ring
+                          if (_ringAnimation.value > 0)
+                            CustomPaint(
+                              size: const Size(200, 200),
+                              painter: _RingProgressPainter(
+                                progress: _ringAnimation.value,
+                              ),
                             ),
-                            child: Text(
-                              'Start Session',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.mavenPro(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
+                          // Button with fixed size
+                          SizedBox(
+                            width: 200,
+                            height: 200,
+                            child: ElevatedButton(
+                              onPressed: _isLoadingTemplate || _nextTemplate == null
+                                  ? null
+                                  : _startWorkoutManually,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                elevation: 0,
+                                shape: const CircleBorder(),
+                                side: const BorderSide(color: Colors.orange, width: 2),
+                                disabledBackgroundColor: Colors.transparent,
+                              ),
+                              child: Text(
+                                _isLoadingTemplate ? 'Loading...' : 'Start Session',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.mavenPro(
+                                  color: _nextTemplate == null ? Colors.white30 : Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
@@ -253,7 +377,6 @@ class _WorkoutContentState extends State<WorkoutContent>
 class _WorkoutState extends State<Workout> {
   int _selectedIndex = 1;
 
-  // TODO: demo logic. add backend logic later
   int _streakLevel = 0; // 0: none, 1: small, 2: medium, 3: high
   final List<Color> _streakColors = [
     Colors.grey.shade700,
@@ -307,7 +430,6 @@ class _WorkoutState extends State<Workout> {
                 size: 28,
               ),
               onPressed: () {
-                // TODO: demo logic. add backend logic later
                 setState(() {
                   _streakLevel = (_streakLevel + 1) % _streakColors.length;
                 });

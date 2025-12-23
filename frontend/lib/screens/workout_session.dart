@@ -2,18 +2,26 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../providers/workout_provider.dart';
+import '../services/workout_service.dart';
 
 enum WeightType { weight, plates }
 enum WeightUnit { lbs, kgs }
 
-class WorkoutSession extends StatefulWidget {
-  const WorkoutSession({super.key});
+class WorkoutSessionScreen extends StatefulWidget {
+  final int templateId;
+
+  const WorkoutSessionScreen({
+    super.key,
+    required this.templateId,
+  });
 
   @override
-  State<WorkoutSession> createState() => _WorkoutSessionState();
+  State<WorkoutSessionScreen> createState() => _WorkoutSessionScreenState();
 }
 
-class _WorkoutSessionState extends State<WorkoutSession> {
+class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   final Stopwatch _stopwatch = Stopwatch();
   late Timer _timer;
   String _elapsedTime = '00:00:00';
@@ -29,11 +37,96 @@ class _WorkoutSessionState extends State<WorkoutSession> {
   WeightType _selectedWeightType = WeightType.weight;
   WeightUnit _selectedWeightUnit = WeightUnit.lbs;
 
+  // Session management
+  late int _sessionId;
+  late List<TemplateExercise> _exercises = [];
+  int _currentExerciseIndex = 0;
+  bool _isLoading = true;
+  String? _errorMessage;
+  bool _initializationStarted = false;
+  
+  // Set tracking - map of exerciseIndex to list of completed sets
+  final Map<int, List<Map<String, dynamic>>> _completedSets = {};
+  int _currentSetNumber = 1;
+
   @override
   void initState() {
     super.initState();
-    _startStopwatch();
+    _initializeSession();
   }
+
+  Future<void> _initializeSession() async {
+    // Prevent multiple initialization calls
+    if (_initializationStarted) {
+      debugPrint('DEBUG: Session initialization already in progress, skipping duplicate call');
+      return;
+    }
+    _initializationStarted = true;
+    
+    try {
+      final provider = context.read<WorkoutProvider>();
+      debugPrint('DEBUG: Active program: ${provider.activeProgram?.name} (ID: ${provider.activeProgram?.id})');
+      debugPrint('DEBUG: Looking for template ID: ${widget.templateId}');
+      debugPrint('DEBUG: Available templates: ${provider.activeProgram?.templates.map((t) => '${t.name} (ID: ${t.id})').join(', ')}');
+      
+      final template = provider.activeProgram?.templates
+          .firstWhere((t) => t.id == widget.templateId);
+
+      if (template == null) {
+        setState(() {
+          _errorMessage = 'Template not found';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      debugPrint('DEBUG: Found template: ${template.name} with ${template.exercises.length} exercises');
+
+      // Fetch exercises for this template
+      _exercises = template.exercises;
+      
+      // Initialize set tracking map
+      for (int i = 0; i < _exercises.length; i++) {
+        _completedSets[i] = [];
+      }
+
+      // Create a session on the backend
+      try {
+        debugPrint('DEBUG: Creating workout session for template ${widget.templateId}');
+        final session = await WorkoutService.createWorkoutSession(widget.templateId);
+        _sessionId = session.id;
+        
+        debugPrint('DEBUG: Session created successfully with ID: $_sessionId');
+        
+        // Backend already pre-creates sets when session is created
+        // No need to call preCreateWorkoutSets() separately
+
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+
+        _startStopwatch();
+      } catch (e) {
+        debugPrint('Error creating session: $e');
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Failed to create session: $e';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error initializing session: $e';
+          _isLoading = false;
+        });
+      }
+      debugPrint('Error in _initializeSession: $e');
+      }
+    }
 
   @override
   void dispose() {
@@ -96,18 +189,105 @@ class _WorkoutSessionState extends State<WorkoutSession> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF0F0F0F),
+        body: const Center(
+          child: CircularProgressIndicator(color: Colors.orangeAccent),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF0F0F0F),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Text('Error'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to Start Session',
+                  style: GoogleFonts.mavenPro(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orangeAccent,
+                  ),
+                  child: const Text(
+                    'Go Back',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_exercises.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF0F0F0F),
+        body: const Center(
+          child: Text(
+            'No exercises in this template',
+            style: TextStyle(color: Colors.white70),
+          ),
+        ),
+      );
+    }
+
+    final currentExercise = _exercises[_currentExerciseIndex];
+    final exerciseName = currentExercise.exercise?.name ?? 'Unknown Exercise';
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F0F),
       body: SafeArea(
         child: Column(
           children: [
-            // Top Action Bar
+            // Top Action Bar with exercise progress
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(width: 48), // Placeholder for alignment
+                  Text(
+                    'Exercise ${_currentExerciseIndex + 1} of ${_exercises.length}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   IconButton(
                     onPressed: () => _showEndSessionDialog(context),
                     icon: const Icon(
@@ -189,25 +369,33 @@ class _WorkoutSessionState extends State<WorkoutSession> {
                           horizontal: 20,
                           vertical: 16,
                         ),
-                        child: const Column(
+                        child: Column(
                           children: [
                             Text(
                               'Current Exercise',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Colors.white54,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 0.8,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              'Barbell Bench Press',
+                              exerciseName,
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${currentExercise.targetSets} sets × ${currentExercise.targetReps ?? '?'} reps',
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 13,
                               ),
                             ),
                           ],
@@ -417,7 +605,7 @@ class _WorkoutSessionState extends State<WorkoutSession> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildExerciseCard(
-                              title: 'Reps',
+                              title: 'Set $_currentSetNumber/${_exercises[_currentExerciseIndex].targetSets}',
                               child: Column(
                                 children: [
                                   SizedBox(
@@ -443,6 +631,29 @@ class _WorkoutSessionState extends State<WorkoutSession> {
                                         ),
                                       ),
                                     ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      FilledButton.tonal(
+                                        onPressed: _currentSetNumber < (_exercises[_currentExerciseIndex].targetSets ?? 3)
+                                            ? _logCurrentSet
+                                            : null,
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: Colors.green.withValues(alpha: 0.2),
+                                          foregroundColor: Colors.green,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 6,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Log Set',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -479,16 +690,9 @@ class _WorkoutSessionState extends State<WorkoutSession> {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Next exercise functionality not implemented yet.',
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
+                      onTap: _currentExerciseIndex < _exercises.length - 1
+                          ? _moveToNextExercise
+                          : () => _showFinishSessionDialog(context),
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
@@ -497,19 +701,23 @@ class _WorkoutSessionState extends State<WorkoutSession> {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             Text(
-                              'Next Exercise',
-                              style: TextStyle(
+                              _currentExerciseIndex < _exercises.length - 1
+                                  ? 'Next Exercise'
+                                  : 'Finish Workout',
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                                 letterSpacing: 0.3,
                               ),
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Icon(
-                              Icons.arrow_forward_rounded,
+                              _currentExerciseIndex < _exercises.length - 1
+                                  ? Icons.arrow_forward_rounded
+                                  : Icons.check_rounded,
                               size: 18,
                               color: Colors.white,
                             ),
@@ -525,6 +733,137 @@ class _WorkoutSessionState extends State<WorkoutSession> {
         ),
       ),
     );
+  }
+
+  void _logCurrentSet() async {
+    // Log the current set and increment set counter
+    try {
+      final currentExercise = _exercises[_currentExerciseIndex];
+      final reps = int.tryParse(_repController.text);
+      final weight = double.tryParse(_weightController.text);
+      
+      // Validate that both weight and reps are entered
+      if (reps == null || weight == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Please enter both weight and reps'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Call backend to log the set
+      try {
+        await WorkoutService.logWorkoutSet(
+          _sessionId,
+          currentExercise.exercise!.id,
+          _currentSetNumber,
+          repsCompleted: reps,
+          weightLb: weight,
+        );
+        
+        debugPrint('Logged set $_currentSetNumber for ${currentExercise.exercise!.name}');
+      } catch (e) {
+        debugPrint('Error logging set: $e');
+      }
+      
+      final loggedSetNumber = _currentSetNumber;
+      
+      setState(() {
+        // Add to completed sets tracking
+        (_completedSets[_currentExerciseIndex] ??= []).add({
+          'set_number': _currentSetNumber,
+          'reps': reps,
+          'weight': weight,
+        });
+        
+        // Increment set number
+        if (_currentSetNumber < (currentExercise.targetSets ?? 3)) {
+          _currentSetNumber++;
+          _repController.clear();
+          _resetExerciseTimer();
+        }
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Set $loggedSetNumber logged!'),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _logCurrentSet: $e');
+    }
+  }
+
+  void _moveToNextExercise() async {
+    // Log current exercise data to backend before moving
+    try {
+      final currentExercise = _exercises[_currentExerciseIndex];
+      final sets = _completedSets[_currentExerciseIndex] ?? [];
+      
+      // If user has entered weight or reps for the current set, validate and log it
+      if (_repController.text.isNotEmpty || _weightController.text.isNotEmpty) {
+        final reps = int.tryParse(_repController.text);
+        final weight = double.tryParse(_weightController.text);
+        
+        // Only proceed if both values are provided
+        if (reps == null || weight == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Please enter both weight and reps before moving to next exercise'),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+        
+        try {
+          await WorkoutService.logWorkoutSet(
+            _sessionId,
+            currentExercise.exercise!.id,
+            _currentSetNumber,
+            repsCompleted: reps,
+            weightLb: weight,
+          );
+          
+          sets.add({
+            'set_number': _currentSetNumber,
+            'reps': reps,
+            'weight': weight,
+          });
+          
+          debugPrint('Logged set for exercise ${currentExercise.exercise!.name}');
+        } catch (e) {
+          debugPrint('Error logging set: $e');
+          // Continue anyway - don't block user progression
+        }
+      }
+      
+      setState(() {
+        if (_currentExerciseIndex < _exercises.length - 1) {
+          _currentExerciseIndex++;
+          _currentSetNumber = 1;
+          _repController.clear();
+          _weightController.clear();
+          _resetExerciseTimer();
+        }
+      });
+    } catch (e) {
+      debugPrint('Error in _moveToNextExercise: $e');
+    }
   }
 
   Widget _buildSegmentButton(
@@ -677,6 +1016,111 @@ class _WorkoutSessionState extends State<WorkoutSession> {
                 'End Session',
                 style: TextStyle(
                   color: Colors.redAccent,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFinishSessionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: Colors.white.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
+          title: const Text(
+            'Finish Workout',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            'Great job! You completed all exercises.\nTotal time: $_elapsedTime\n\nWould you like to save this workout?',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'Keep Editing',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Log the last exercise's set if not already logged
+                try {
+                  final currentExercise = _exercises[_currentExerciseIndex];
+                  if (_repController.text.isNotEmpty || _weightController.text.isNotEmpty) {
+                    final reps = int.tryParse(_repController.text);
+                    final weight = double.tryParse(_weightController.text);
+                    
+                    await WorkoutService.logWorkoutSet(
+                      _sessionId,
+                      currentExercise.exercise!.id,
+                      _currentSetNumber,
+                      repsCompleted: reps,
+                      weightLb: weight,
+                    );
+                  }
+                  
+                  // Finish the session on the backend
+                  await WorkoutService.finishWorkoutSession(
+                    _sessionId,
+                    notes: 'Workout completed via mobile app',
+                  );
+                  
+                  if (mounted) {
+                    Navigator.pop(this.context); // Close dialog
+                    Navigator.pop(this.context); // Go back
+                    
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Workout saved successfully!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('Error finishing session: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error saving workout: $e'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text(
+                'Save & Exit',
+                style: TextStyle(
+                  color: Colors.green,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),

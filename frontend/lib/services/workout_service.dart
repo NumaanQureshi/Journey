@@ -38,22 +38,26 @@ class Exercise {
     List<String>? parseStringArray(dynamic value) {
       if (value == null) return null;
       if (value is List) {
-        return List<String>.from(value);
+        try {
+          return List<String>.from(value.map((e) => e.toString()));
+        } catch (_) {
+          return null;
+        }
       }
       return null;
     }
 
     return Exercise(
-      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
-      name: json['name'] ?? '',
-      description: json['description'],
-      category: json['category'],
-      categoryMajor: json['category_major'],
-      difficultyLevel: json['difficulty_level'] ?? json['level'],
-      mechanic: json['mechanic'],
-      equipment: json['equipment'],
-      primaryMuscles: parseStringArray(json['primaryMuscles'] ?? json['primary_muscles']),
-      secondaryMuscles: parseStringArray(json['secondaryMuscles'] ?? json['secondary_muscles']),
+      id: WorkoutService._parseInt(json['id']) ?? 0,
+      name: (json['name'] ?? '').toString(),
+      description: json['description']?.toString(),
+      category: json['category']?.toString(),
+      categoryMajor: json['category_major']?.toString(),
+      difficultyLevel: (json['difficulty_level'] ?? json['level'])?.toString(),
+      mechanic: json['mechanic']?.toString(),
+      equipment: json['equipment']?.toString(),
+      primaryMuscles: parseStringArray(json['primary_muscles'] ?? json['primaryMuscles']),
+      secondaryMuscles: parseStringArray(json['secondary_muscles'] ?? json['secondaryMuscles']),
       instructions: parseStringArray(json['instructions']),
       images: parseStringArray(json['images']),
     );
@@ -88,7 +92,7 @@ class TemplateExercise {
     debugPrint('TemplateExercise.fromJson received: $json');
     
     // Handle null values for required fields
-    final id = json['id'] ?? json['id']; // Try both camelCase and snake_case
+    final id = json['id'];
     final templateId = json['template_id'] ?? json['templateId'] ?? defaultTemplateId;
     final exerciseId = json['exercise_id'] ?? json['exerciseId'];
     
@@ -102,21 +106,6 @@ class TemplateExercise {
       throw Exception('TemplateExercise.fromJson: exerciseId is null');
     }
     
-    // Helper function to safely parse double values
-    double? parseDouble(dynamic value) {
-      if (value == null) return null;
-      if (value is double) return value;
-      if (value is int) return value.toDouble();
-      if (value is String) {
-        try {
-          return double.parse(value);
-        } catch (_) {
-          return null;
-        }
-      }
-      return null;
-    }
-    
     // Create Exercise object if we have exercise details
     Exercise? exercise;
     if (json['exercise'] != null) {
@@ -124,7 +113,7 @@ class TemplateExercise {
     } else if (json['exercise_name'] != null) {
       // Create a minimal Exercise object from exercise_name and exercise_id
       exercise = Exercise(
-        id: exerciseId is int ? exerciseId : int.parse(exerciseId.toString()),
+        id: WorkoutService._parseInt(exerciseId) ?? 0,
         name: json['exercise_name'] as String,
         description: null,
         category: null,
@@ -140,14 +129,14 @@ class TemplateExercise {
     }
     
     return TemplateExercise(
-      id: id is int ? id : int.parse(id.toString()),
-      templateId: templateId is int ? templateId : int.parse(templateId.toString()),
-      exerciseId: exerciseId is int ? exerciseId : int.parse(exerciseId.toString()),
-      targetSets: json['target_sets'] ?? json['targetSets'],
+      id: WorkoutService._parseInt(id) ?? 0,
+      templateId: WorkoutService._parseInt(templateId) ?? 0,
+      exerciseId: WorkoutService._parseInt(exerciseId) ?? 0,
+      targetSets: WorkoutService._parseInt(json['target_sets'] ?? json['targetSets']),
       targetReps: json['target_reps'] ?? json['targetReps'],
-      targetWeightLb: parseDouble(json['target_weight_lb'] ?? json['targetWeightLb']),
-      restSeconds: json['rest_seconds'] ?? json['restSeconds'],
-      orderIndex: json['order_index'] ?? json['orderIndex'],
+      targetWeightLb: WorkoutService._parseDouble(json['target_weight_lb'] ?? json['targetWeightLb']),
+      restSeconds: WorkoutService._parseInt(json['rest_seconds'] ?? json['restSeconds']),
+      orderIndex: WorkoutService._parseInt(json['order_index'] ?? json['orderIndex']),
       exercise: exercise,
     );
   }
@@ -173,16 +162,16 @@ class WorkoutTemplate {
   });
 
   factory WorkoutTemplate.fromJson(Map<String, dynamic> json) {
-    final templateId = (json['id'] as int?) ?? 0;
+    final templateId = WorkoutService._parseInt(json['id']) ?? 0;
     return WorkoutTemplate(
       id: templateId,
-      programId: (json['program_id'] as int?) ?? 0,
+      programId: WorkoutService._parseInt(json['program_id']) ?? 0,
       name: (json['name'] as String?) ?? 'Unnamed Template',
-      dayOrder: json['day_order'] as int?,
+      dayOrder: WorkoutService._parseInt(json['day_order']),
       notes: json['notes'] as String?,
       createdAt: Program._parseDate(json['created_at']),
       exercises: json['exercises'] != null
-          ? (json['exercises'] as List).map((e) => TemplateExercise.fromJson(e, defaultTemplateId: templateId)).toList()
+          ? (json['exercises'] as List).map((e) => TemplateExercise.fromJson(e as Map<String, dynamic>, defaultTemplateId: templateId)).toList()
           : [],
     );
   }
@@ -252,8 +241,8 @@ class Program {
 
   factory Program.fromJson(Map<String, dynamic> json) {
     return Program(
-      id: json['id'] as int? ?? 0,
-      userId: json['user_id'] as int?,
+      id: WorkoutService._parseInt(json['id']) ?? 0,
+      userId: WorkoutService._parseInt(json['user_id']),
       name: (json['name'] as String?) ?? 'Unnamed Program',
       description: json['description'] as String?,
       isActive: json['is_active'] as bool?,
@@ -272,6 +261,27 @@ class Program {
       'description': description,
       'is_active': isActive,
     };
+  }
+
+  /// Create a copy of this program with some fields replaced
+  Program copyWith({
+    int? id,
+    int? userId,
+    String? name,
+    String? description,
+    bool? isActive,
+    DateTime? createdAt,
+    List<WorkoutTemplate>? templates,
+  }) {
+    return Program(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      templates: templates ?? this.templates,
+    );
   }
 }
 
@@ -302,22 +312,64 @@ class WorkoutSession {
 
   factory WorkoutSession.fromJson(Map<String, dynamic> json) {
     return WorkoutSession(
-      id: json['id'],
-      userId: json['user_id'],
-      templateId: json['template_id'],
+      id: WorkoutService._parseInt(json['id']) ?? 0,
+      userId: WorkoutService._parseInt(json['user_id']) ?? 0,
+      templateId: WorkoutService._parseInt(json['template_id']),
       startTime: Program._parseDate(json['start_time']),
       endTime: Program._parseDate(json['end_time']),
-      status: json['status'],
-      durationMin: json['duration_min'],
-      caloriesBurned: json['calories_burned'],
-      totalVolumeLb: json['total_volume_lb'],
-      notes: json['notes'],
+      status: json['status']?.toString(),
+      durationMin: WorkoutService._parseInt(json['duration_min']),
+      caloriesBurned: WorkoutService._parseInt(json['calories_burned']),
+      totalVolumeLb: WorkoutService._parseDouble(json['total_volume_lb']),
+      notes: json['notes']?.toString(),
     );
   }
 }
 
 class WorkoutService {
   static final _authService = AuthService();
+
+  /// Helper to safely parse integers from various types
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /// Helper to safely parse doubles from various types
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /// Convert UTC DateTime from database to user's local timezone
+  /// The database stores times in UTC, but we want to display them in the user's local time
+  static DateTime convertToLocalTime(DateTime? utcDateTime) {
+    if (utcDateTime == null) return DateTime.now();
+    
+    // If the DateTime is already in local time (not UTC), return as-is
+    if (!utcDateTime.isUtc) return utcDateTime;
+    
+    // Convert UTC to local time
+    return utcDateTime.toLocal();
+  }
 
   // ==================== PROGRAMS ====================
 
@@ -408,18 +460,28 @@ class WorkoutService {
       final token = await _authService.getToken();
       if (token == null) throw Exception('No auth token');
 
+      final requestBody = <String, dynamic>{
+        'name': name,
+        'description': description,
+      };
+      
+      if (isActive != null) {
+        requestBody['is_active'] = isActive;
+      }
+
+      debugPrint('DEBUG: Updating program $programId with body: $requestBody');
+
       final response = await http.put(
         Uri.parse('${ApiService.workouts()}/programs/$programId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'name': name,
-          'description': description,
-          'is_active': isActive,
-        }),
+        body: jsonEncode(requestBody),
       );
+
+      debugPrint('DEBUG: Update program response status: ${response.statusCode}');
+      debugPrint('DEBUG: Update program response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -626,6 +688,80 @@ class WorkoutService {
         throw Exception('Unauthorized: You do not own this template');
       } else {
         throw Exception('Failed to update template: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update the day order of a single template
+  static Future<WorkoutTemplate> updateTemplateOrder({
+    required int templateId,
+    required int dayOrder,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.put(
+        Uri.parse('${ApiService.workouts()}/templates/$templateId/order'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'day_order': dayOrder,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['template'] != null) {
+          return WorkoutTemplate.fromJson(body['template']);
+        }
+        throw Exception('Invalid response format');
+      } else if (response.statusCode == 403) {
+        throw Exception('Unauthorized: You do not own this template');
+      } else {
+        throw Exception('Failed to update template order: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update the day order of multiple templates in bulk
+  static Future<List<WorkoutTemplate>> updateTemplatesOrder({
+    required List<Map<String, int>> templateOrders,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.put(
+        Uri.parse('${ApiService.workouts()}/templates/reorder'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'templates': templateOrders,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['templates'] != null) {
+          final templates = (body['templates'] as List)
+              .map((t) => WorkoutTemplate.fromJson(t as Map<String, dynamic>))
+              .toList();
+          return templates;
+        }
+        throw Exception('Invalid response format');
+      } else if (response.statusCode == 403) {
+        throw Exception('Unauthorized: You do not own these templates');
+      } else {
+        throw Exception('Failed to update templates order: ${response.statusCode}');
       }
     } catch (e) {
       rethrow;
@@ -848,6 +984,9 @@ class WorkoutService {
         headers: {'Authorization': 'Bearer $token'},
       );
 
+      debugPrint('DEBUG: getWorkoutSessions response status: ${response.statusCode}');
+      debugPrint('DEBUG: getWorkoutSessions response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
         if (body['success'] == true && body['sessions'] != null) {
@@ -856,9 +995,10 @@ class WorkoutService {
         }
         throw Exception('Invalid response format');
       } else {
-        throw Exception('Failed to load sessions: ${response.statusCode}');
+        throw Exception('Failed to load sessions: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
+      debugPrint('DEBUG: Exception in getWorkoutSessions: $e');
       rethrow;
     }
   }
@@ -955,5 +1095,252 @@ class WorkoutService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Phase 3: Create a new workout session
+  static Future<WorkoutSession> createWorkoutSession(
+    int templateId,
+  ) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      debugPrint('DEBUG: Creating session for template $templateId');
+      
+      final requestBody = jsonEncode({
+        'template_id': templateId,
+      });
+      debugPrint('DEBUG: Request body: $requestBody');
+      
+      final response = await http.post(
+        Uri.parse('${ApiService.workouts()}/sessions'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: requestBody,
+      );
+
+      debugPrint('DEBUG: Create session response status: ${response.statusCode}');
+      debugPrint('DEBUG: Create session response body: ${response.body}');
+
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['session'] != null) {
+          return WorkoutSession.fromJson(body['session']);
+        }
+        throw Exception('Invalid response format');
+      } else if (response.statusCode == 500) {
+        throw Exception('Server error creating session: ${response.body}');
+      } else {
+        throw Exception('Failed to create session: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('ERROR in createWorkoutSession: $e');
+      rethrow;
+    }
+  }
+
+  /// Phase 3: Pre-create empty workout sets for a session based on template
+  static Future<List<WorkoutSet>> preCreateWorkoutSets(
+    int sessionId,
+    int templateId,
+  ) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.post(
+        Uri.parse('${ApiService.workouts()}/sessions/$sessionId/presets'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'template_id': templateId,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['sets'] != null) {
+          final sets = body['sets'] as List;
+          return sets.map((e) => WorkoutSet.fromJson(e)).toList();
+        }
+        throw Exception('Invalid response format');
+      } else {
+        throw Exception('Failed to create sets: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Phase 3: Log a workout set
+  static Future<WorkoutSet> logWorkoutSet(
+    int sessionId,
+    int exerciseId,
+    int setNumber, {
+    required int? repsCompleted,
+    required double? weightLb,
+    int? rpe,
+    bool isWarmup = false,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.post(
+        Uri.parse('${ApiService.workouts()}/sessions/$sessionId/sets'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'exercise_id': exerciseId,
+          'set_number': setNumber,
+          'reps_completed': repsCompleted,
+          'weight_lb': weightLb,
+          'rpe': rpe,
+          'is_warmup': isWarmup,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['set'] != null) {
+          return WorkoutSet.fromJson(body['set']);
+        }
+        throw Exception('Invalid response format');
+      } else {
+        throw Exception('Failed to log set: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Phase 3: Finish a workout session and calculate stats
+  static Future<WorkoutSession> finishWorkoutSession(
+    int sessionId, {
+    String? notes,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.put(
+        Uri.parse('${ApiService.workouts()}/sessions/$sessionId/complete'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'status': 'completed',
+          'notes': notes,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['session'] != null) {
+          return WorkoutSession.fromJson(body['session']);
+        }
+        throw Exception('Invalid response format');
+      } else {
+        throw Exception('Failed to finish session: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Phase 3: Get all sets for a session
+  static Future<List<WorkoutSet>> getSessionSets(int sessionId) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No auth token');
+
+      final response = await http.get(
+        Uri.parse('${ApiService.workouts()}/sessions/$sessionId/sets'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['success'] == true && body['sets'] != null) {
+          final sets = body['sets'] as List;
+          return sets.map((e) => WorkoutSet.fromJson(e)).toList();
+        }
+        throw Exception('Invalid response format');
+      } else {
+        throw Exception('Failed to fetch sets: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+}
+
+/// WorkoutSet - represents a single set of an exercise
+class WorkoutSet {
+  final int id;
+  final int sessionId;
+  final int exerciseId;
+  final int setNumber;
+  final int? repsCompleted;
+  final double? weightLb;
+  final int? rpe;
+  final bool isWarmup;
+  final DateTime createdAt;
+
+  WorkoutSet({
+    required this.id,
+    required this.sessionId,
+    required this.exerciseId,
+    required this.setNumber,
+    this.repsCompleted,
+    this.weightLb,
+    this.rpe,
+    this.isWarmup = false,
+    required this.createdAt,
+  });
+
+  factory WorkoutSet.fromJson(Map<String, dynamic> json) {
+    final createdAtStr = json['created_at'];
+    DateTime createdAt;
+    try {
+      if (createdAtStr is String) {
+        createdAt = DateTime.parse(createdAtStr);
+      } else {
+        createdAt = DateTime.now();
+      }
+    } catch (_) {
+      createdAt = DateTime.now();
+    }
+
+    return WorkoutSet(
+      id: WorkoutService._parseInt(json['id']) ?? 0,
+      sessionId: WorkoutService._parseInt(json['session_id']) ?? 0,
+      exerciseId: WorkoutService._parseInt(json['exercise_id']) ?? 0,
+      setNumber: WorkoutService._parseInt(json['set_number']) ?? 0,
+      repsCompleted: WorkoutService._parseInt(json['reps_completed']),
+      weightLb: WorkoutService._parseDouble(json['weight_lb']),
+      rpe: WorkoutService._parseInt(json['rpe']),
+      isWarmup: (json['is_warmup'] as bool?) ?? false,
+      createdAt: createdAt,
+    );
+  }
+
+Map<String, dynamic> toJson() {
+    return {
+      'session_id': sessionId,
+      'exercise_id': exerciseId,
+      'set_number': setNumber,
+      'reps_completed': repsCompleted,
+      'weight_lb': weightLb,
+      'rpe': rpe,
+      'is_warmup': isWarmup,
+    };
   }
 }
