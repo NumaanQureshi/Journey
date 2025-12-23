@@ -1,0 +1,1 @@
+SELECT COUNT(*) as count FROM ai_conversations WHERE user_id = %s;

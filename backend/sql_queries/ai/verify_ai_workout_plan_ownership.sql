@@ -1,0 +1,1 @@
+SELECT id FROM ai_workout_plans WHERE id = %s AND user_id = %s;
