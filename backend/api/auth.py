@@ -3,7 +3,7 @@ import psycopg2
 import bcrypt
 import jwt                      # Encode / Decode
 import datetime
-from backend.helper_functions import convert_dict_dates_to_iso8601
+from helper_functions import convert_dict_dates_to_iso8601
 from utils.utilities import get_db_connection, token_required
 from utils.helper_functions import calculate_age, generate_reset_token
 from utils.sql_loader import load_sql_query
