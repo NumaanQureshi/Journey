@@ -15,10 +15,9 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
   @override
   void initState() {
     super.initState();
-    // Load programs and exercises when screen initializes
+    // Load programs when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<WorkoutProvider>().loadPrograms();
-      context.read<WorkoutProvider>().loadExercises();
     });
   }
 
@@ -43,6 +42,13 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Active Program Card (if one exists)
+                if (provider.activeProgram != null)
+                  _buildActiveProgramCard(context, provider, provider.activeProgram!),
+                
+                const SizedBox(height: 24),
+                
+                // All Programs Header
                 const Text(
                   'Your Programs',
                   style: TextStyle(
@@ -52,6 +58,8 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                
+                // Programs List (excluding active program)
                 _buildProgramsList(context, provider),
               ],
             ),
@@ -66,14 +74,152 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
     );
   }
 
-  /// Build the list of programs
+  /// Build the active program card at the top
+  Widget _buildActiveProgramCard(
+    BuildContext context,
+    WorkoutProvider provider,
+    Program activeProgram,
+  ) {
+    return Card(
+      color: Colors.orangeAccent.withValues(alpha: 0.15),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Colors.orangeAccent, width: 2),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.star, color: Colors.orangeAccent, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Active Program',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        activeProgram.name,
+                        style: const TextStyle(
+                          color: Colors.orangeAccent,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (activeProgram.description != null &&
+                activeProgram.description!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                activeProgram.description!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  color: Colors.white70,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${activeProgram.templates.length} workout days',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProgramDetailScreen(program: activeProgram),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Manage Program',
+                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build the list of programs (excluding active program)
   Widget _buildProgramsList(BuildContext context, WorkoutProvider provider) {
+    // Filter out the active program from the list
+    final otherPrograms = provider.programs
+        .where((p) => p.id != provider.activeProgram?.id)
+        .toList();
+
+    if (otherPrograms.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24.0),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.inbox,
+                color: Colors.white70,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No Other Programs',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: provider.programs.length,
+      itemCount: otherPrograms.length,
       itemBuilder: (context, index) {
-        final program = provider.programs[index];
+        final program = otherPrograms[index];
 
         return Card(
           color: const Color(0xFF2C2C2C),
@@ -104,20 +250,13 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
+                const PopupMenuItem<String>(
                   value: 'set-active',
                   child: Row(
                     children: [
-                      Icon(
-                        program.isActive == true ? Icons.check_circle : Icons.radio_button_unchecked,
-                        color: program.isActive == true ? Colors.green : Colors.white70,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        program.isActive == true ? 'Active' : 'Set as Active',
-                        style: TextStyle(color: program.isActive == true ? Colors.green : Colors.white),
-                      ),
+                      Icon(Icons.radio_button_unchecked, color: Colors.white70, size: 20),
+                      SizedBox(width: 12),
+                      Text('Set as Active', style: TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),
@@ -421,7 +560,10 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
                     );
                   } else {
                     messenger.showSnackBar(
-                      SnackBar(content: Text('Error: ${provider.error}')),
+                      SnackBar(
+                        content: Text('Error: ${provider.error ?? 'Unknown error'}'),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                   }
                 }
@@ -429,7 +571,10 @@ class _WorkoutPlansScreenState extends State<WorkoutPlans> {
                 if (mounted) {
                   nav.pop();
                   messenger.showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
+                    SnackBar(
+                      content: Text('Error: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
