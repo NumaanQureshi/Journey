@@ -582,13 +582,13 @@ def log_set(user_id, session_id):
         is_warmup = data.get('is_warmup', False)
         
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         
         # Verify user owns this session
         sql_verify = load_sql_query('select_session_owner.sql')
         cur.execute(sql_verify, (session_id,))
         session = cur.fetchone()
-        if not session or session[0] != user_id:
+        if not session or session['user_id'] != user_id:
             return jsonify({"success": False, "error": "Unauthorized"}), 403
         
         # Insert the set
@@ -600,7 +600,7 @@ def log_set(user_id, session_id):
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "set": {"id": new_set[0]}}), 201
+        return jsonify({"success": True, "set": convert_dict_dates_to_iso8601(dict(new_set))}), 201
     except Exception as e:
         if conn:
             conn.rollback()
@@ -624,7 +624,7 @@ def update_set(user_id, set_id):
         rpe = data.get('rpe')
         
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         
         # Verify user owns this set (through session)
         sql_verify = load_sql_query('verify_set_owner.sql')
