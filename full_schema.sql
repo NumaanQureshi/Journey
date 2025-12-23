@@ -72,6 +72,7 @@ create table public.programs (
   description text null,
   is_active boolean null default false,
   created_at timestamp with time zone null default now(),
+  updated_at timestamp without time zone null default CURRENT_TIMESTAMP,
   constraint programs_pkey primary key (id),
   constraint programs_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
 ) TABLESPACE pg_default;
