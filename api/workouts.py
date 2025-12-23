@@ -485,7 +485,7 @@ def create_session(user_id):
         sql_query = load_sql_query('insert_workout_session.sql')
         cur.execute(sql_query, (user_id, template_id, ''))
         session = cur.fetchone()
-        session_id = session[0]
+        session_id = session['id']
         
         # Pre-fill sets from template
         sql_get_exercises = load_sql_query('select_template_exercises.sql')
