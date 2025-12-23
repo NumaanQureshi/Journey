@@ -502,7 +502,7 @@ def create_session(user_id):
         
         conn.commit()
         
-        return jsonify({"success": True, "session": {"id": session_id}}), 201
+        return jsonify({"success": True, "session": convert_dict_dates_to_iso8601(dict(session))}), 201
     except Exception as e:
         if conn:
             conn.rollback()
