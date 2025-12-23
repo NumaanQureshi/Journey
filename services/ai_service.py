@@ -6,35 +6,31 @@ import requests
 from datetime import datetime
 import psycopg2
 from utils.sql_loader import load_sql_query
+SYSTEM_PROMPT = "You are a certified personal trainer AI assistant. You help users create safe, effective workout plans, explain exercises, provide form cues, and answer general fitness or app-related questions. You prioritize safety, avoid unsafe advice, and ask clarifying questions when information is missing. Avoid misinformation and help the user the best you can. When evaluating exercises or weight loads, classify them using one safety label: Safe, Optimal, Caution, or Dangerous. Always explain the reasoning, consider the user’s experience level and context, and suggest safer alternatives when appropriate. Do not encourage unsafe behavior and flag whether to Cautious or something is Dangerous with in detail explanation and provide better alternatives."
+APP_CONTEXT = """
+APP CONTEXT (Journey):
+- Users have a primary fitness goal (build muscle, lose fat, general fitness)
+- The app allows user to track workouts
+- The app allows users to create AI-powered personalized workouts
+- The AI focuses on safety, information, and progress
+"""
 
 
 class FitnessAIAgent:
     def __init__(self):
         self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-        self.model_id = os.environ.get("FINETUNED_MODEL_ID")
-    
-        if self.model_id:
-            print(f"✓ Using fine-tuned model")
-        else:
-            self.model_id = "gpt-4o-mini-2024-07-18"
-            print(f"⚠ Using base model: {self.model_id}")
+        self.model_id = os.environ.get("FINETUNED_MODEL_ID", "gpt-4o-mini-2024-07-18")
 
         # Load exercises database
         self.exercises = self._load_exercises()
 
     def _load_exercises(self):
-        try:
-            response = requests.get(
-                "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",
-                timeout=10
-            )
-            exercises = response.json()
-            print(f"✓ Loaded {len(exercises)} exercises from database")
-            return exercises
-        except Exception as e:
-            print(f"⚠ Error loading exercises: {e}")
-            return []
+        res = requests.get(
+            "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",
+            timeout=10
+        )
+        res.raise_for_status()
+        return res.json()
 
     def _build_user_context(self, user_data: Dict[str, Any]) -> str:
         context_parts = []
@@ -117,7 +113,7 @@ Return a JSON workout plan with this structure:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert personal trainer who creates highly personalized workout plans."
+                        "content": SYSTEM_PROMPT
                     },
                     {
                         "role": "user",
@@ -208,7 +204,7 @@ Provide analysis as JSON:
             response = self.client.chat.completions.create(
                 model=self.model_id,
                 messages=[
-                    {"role": "system", "content": "You are a personal trainer analyzing workout performance."},
+                    {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
@@ -231,6 +227,15 @@ Provide analysis as JSON:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def is_safety_question(message: str) -> bool:
+        keywords = [
+            "lbs", "kg", "heavy", "max", "tired",
+            "bench", "squat", "deadlift",
+            "safe", "dangerous", "too much", "pb", "personal best"
+        ]
+        msg = message.lower()
+        return any(k in msg for k in keywords)
+
     def chat_with_trainer(
             self,
             user_data: Dict[str, Any],
@@ -242,18 +247,25 @@ Provide analysis as JSON:
 
         messages = [
             {
-                "role": "system",
-                "content": f"""You are a expert and knowledgeable personal trainer.
-
-CLIENT CONTEXT:
-{user_context}
-
-Provide helpful, personalized advice based on their situation."""
+                {"role": "system", "content": f"{SYSTEM_PROMPT}\n\nCLIENT CONTEXT:\n{user_context}"},
+                {"role": "system", "content": APP_CONTEXT},
+                {"role": "system", "content": f"USER CONTEXT:\n{user_context}"}
             }
         ]
 
         if conversation_history:
             messages.extend(conversation_history)
+        if is_safety_question(message):
+            message += """
+
+        Format a response regarding the concern:
+        {
+          "label": "Safe | Optimal | Caution | Dangerous",
+          "reasoning": "Why this label applies based on the user's experience",
+          "recommendation": "What the user should do instead or how to proceed safely",
+          "safer_alternatives": ["alternative 1", "alternative 2"],
+        }
+        """
 
         messages.append({"role": "user", "content": message})
 
