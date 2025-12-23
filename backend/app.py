@@ -11,15 +11,16 @@ from api.workouts import workouts_bp
 def create_app():
     load_dotenv()
     app = Flask(__name__)
-    CORS(app, resources={r"/api/*": {"origins": "*"}}) 
+    
+    # Configure CORS for production
+    allowed_origins = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
     app.config['DATABASE_URL'] = os.getenv("DATABASE_URL")
     app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
     app.config['RESET_PASSWORD_URL'] = os.getenv("RESET_PASSWORD_URL")
-    
-    # debugging feature flags
-    app.config['SKIP_AUTH_DEBUG'] = os.getenv('SKIP_AUTH_DEBUG', 'False').lower() in ('true', '1', 't')
-    app.config['DEBUG_USER_ID'] = os.getenv('DEBUG_USER_ID', None)
+    app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
+    app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'False').lower() in ('true', '1', 't')
 
     # blueprint registry
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -38,4 +39,6 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Use environment variable to control debug mode - should be False in production
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ('true', '1', 't')
+    app.run(debug=debug_mode, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
