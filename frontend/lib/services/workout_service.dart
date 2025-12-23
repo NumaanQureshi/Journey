@@ -359,6 +359,18 @@ class WorkoutService {
     return null;
   }
 
+  /// Convert UTC DateTime from database to user's local timezone
+  /// The database stores times in UTC, but we want to display them in the user's local time
+  static DateTime convertToLocalTime(DateTime? utcDateTime) {
+    if (utcDateTime == null) return DateTime.now();
+    
+    // If the DateTime is already in local time (not UTC), return as-is
+    if (!utcDateTime.isUtc) return utcDateTime;
+    
+    // Convert UTC to local time
+    return utcDateTime.toLocal();
+  }
+
   // ==================== PROGRAMS ====================
 
   /// Fetch all programs for the current user
