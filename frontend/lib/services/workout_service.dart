@@ -273,6 +273,27 @@ class Program {
       'is_active': isActive,
     };
   }
+
+  /// Create a copy of this program with some fields replaced
+  Program copyWith({
+    int? id,
+    int? userId,
+    String? name,
+    String? description,
+    bool? isActive,
+    DateTime? createdAt,
+    List<WorkoutTemplate>? templates,
+  }) {
+    return Program(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      templates: templates ?? this.templates,
+    );
+  }
 }
 
 class WorkoutSession {
@@ -408,18 +429,28 @@ class WorkoutService {
       final token = await _authService.getToken();
       if (token == null) throw Exception('No auth token');
 
+      final requestBody = <String, dynamic>{
+        'name': name,
+        'description': description,
+      };
+      
+      if (isActive != null) {
+        requestBody['is_active'] = isActive;
+      }
+
+      debugPrint('DEBUG: Updating program $programId with body: $requestBody');
+
       final response = await http.put(
         Uri.parse('${ApiService.workouts()}/programs/$programId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'name': name,
-          'description': description,
-          'is_active': isActive,
-        }),
+        body: jsonEncode(requestBody),
       );
+
+      debugPrint('DEBUG: Update program response status: ${response.statusCode}');
+      debugPrint('DEBUG: Update program response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
