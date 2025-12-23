@@ -1,0 +1,1 @@
+DELETE FROM ai_conversations WHERE user_id = %s;

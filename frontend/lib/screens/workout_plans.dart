@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/workout_provider.dart';
+import '../services/workout_service.dart';
+import 'program_detail_screen.dart';
 
 class WorkoutPlans extends StatefulWidget {
   const WorkoutPlans({super.key});
@@ -9,93 +13,636 @@ class WorkoutPlans extends StatefulWidget {
 
 class _WorkoutPlansScreenState extends State<WorkoutPlans> {
   @override
+  void initState() {
+    super.initState();
+    // Load programs when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WorkoutProvider>().loadPrograms();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final List<Map<String, String>> mockSplits = [
-      {
-        'name': 'Push/Pull/Legs',
-        'description': 'Classic 3-day split for strength.'
-      },
-      {
-        'name': 'Upper/Lower Split',
-        'description': '4-day split focusing on upper and lower body.'
-      },
-      {
-        'name': 'Full Body Blast',
-        'description': '3 times a week, for beginners.'
-      },
-    ];
-
-    // Mock data for customizable workout days
-    final List<String> customizableDays = [
-      'Chest Day',
-      'Back Day',
-      'Leg Day',
-      'Shoulder Day',
-      'Arm Day'
-    ];
-
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
-      body: SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section 1: Weekly Splits
-          const Text(
-            'Weekly Splits',
-            style: TextStyle(
-                color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: mockSplits.length,
-            itemBuilder: (context, index) {
-              final split = mockSplits[index];
-              return Card(
-                color: const Color(0xFF2C2C2C),
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  title: Text(split['name']!,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
-                  subtitle: Text(split['description']!,
-                      style: const TextStyle(color: Colors.white70)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.orangeAccent),
-                    onPressed: () {/* TODO: Implement edit split */},
+      body: Consumer<WorkoutProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.orangeAccent),
+            );
+          }
+
+          if (provider.programs.isEmpty) {
+            return _buildEmptyState(context);
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Active Program Card (if one exists)
+                if (provider.activeProgram != null)
+                  _buildActiveProgramCard(context, provider, provider.activeProgram!),
+                
+                const SizedBox(height: 24),
+                
+                // All Programs Header
+                const Text(
+                  'Your Programs',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Programs List (excluding active program)
+                _buildProgramsList(context, provider),
+              ],
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.orangeAccent,
+        onPressed: () => _showCreateProgramDialog(context),
+        child: const Icon(Icons.add, color: Colors.black),
+      ),
+    );
+  }
+
+  /// Build the active program card at the top
+  Widget _buildActiveProgramCard(
+    BuildContext context,
+    WorkoutProvider provider,
+    Program activeProgram,
+  ) {
+    return Card(
+      color: Colors.orangeAccent.withValues(alpha: 0.15),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Colors.orangeAccent, width: 2),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.star, color: Colors.orangeAccent, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Active Program',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        activeProgram.name,
+                        style: const TextStyle(
+                          color: Colors.orangeAccent,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (activeProgram.description != null &&
+                activeProgram.description!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                activeProgram.description!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  color: Colors.white70,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${activeProgram.templates.length} workout days',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProgramDetailScreen(program: activeProgram),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Manage Program',
+                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build the list of programs (excluding active program)
+  Widget _buildProgramsList(BuildContext context, WorkoutProvider provider) {
+    // Filter out the active program from the list
+    final otherPrograms = provider.programs
+        .where((p) => p.id != provider.activeProgram?.id)
+        .toList();
+
+    if (otherPrograms.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24.0),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.inbox,
+                color: Colors.white70,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No Other Programs',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: otherPrograms.length,
+      itemBuilder: (context, index) {
+        final program = otherPrograms[index];
+
+        return Card(
+          color: const Color(0xFF2C2C2C),
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            title: Text(
+              program.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              program.description ?? 'No description',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            trailing: PopupMenuButton<String>(
+              color: const Color(0xFF2C2C2C),
+              onSelected: (value) {
+                if (value == 'set-active') {
+                  _setActiveProgramConfirmation(context, program, provider);
+                } else if (value == 'edit') {
+                  _showEditProgramDialog(context, program);
+                } else if (value == 'delete') {
+                  _showDeleteConfirmationDialog(context, program, provider);
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'set-active',
+                  child: Row(
+                    children: [
+                      Icon(Icons.radio_button_unchecked, color: Colors.white70, size: 20),
+                      SizedBox(width: 12),
+                      Text('Set as Active', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, color: Colors.orangeAccent, size: 20),
+                      SizedBox(width: 12),
+                      Text('Edit', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red, size: 20),
+                      SizedBox(width: 12),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+              child: const Icon(Icons.more_vert, color: Colors.orangeAccent),
+            ),
+            onTap: () {
+              // Navigate to program detail screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProgramDetailScreen(program: program),
                 ),
               );
             },
           ),
-          const SizedBox(height: 24),
+        );
+      },
+    );
+  }
 
-          // Section 2: Customize your Days
-          const Text(
-            'Customize Your Days',
-            style: TextStyle(
-                color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+  /// Build empty state when no programs exist
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.fitness_center,
+            color: Colors.white70,
+            size: 64,
           ),
-          const SizedBox(height: 12),
-          ...customizableDays.map((day) => Card(
-                color: const Color(0xFF2C2C2C),
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: Text(day,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                    onPressed: () {/* TODO: Implement customize day */},
-                  ),
+          const SizedBox(height: 16),
+          const Text(
+            'No Workout Programs Yet',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Create your first program to get started',
+            style: TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent,
+            ),
+            onPressed: () => _showCreateProgramDialog(context),
+            icon: const Icon(Icons.add, color: Colors.black),
+            label: const Text(
+              'Create Program',
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show dialog to create a new program
+  void _showCreateProgramDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Create New Program',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Program name',
+                hintStyle: const TextStyle(color: Colors.white70),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white70),
                 ),
-              )),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descriptionController,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Description (optional)',
+                hintStyle: const TextStyle(color: Colors.white70),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white70),
+                ),
+              ),
+            ),
           ],
         ),
-      )
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent,
+            ),
+            onPressed: () {
+              context.read<WorkoutProvider>().createProgram(
+                name: nameController.text,
+                description: descriptionController.text,
+              );
+              Navigator.pop(context);
+            },
+            child: const Text('Create', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show dialog to edit an existing program
+  void _showEditProgramDialog(BuildContext context, Program program) {
+    final nameController = TextEditingController(text: program.name);
+    final descriptionController = TextEditingController(text: program.description ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Edit Program',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Program name',
+                hintStyle: const TextStyle(color: Colors.white70),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white70),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descriptionController,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Description (optional)',
+                hintStyle: const TextStyle(color: Colors.white70),
+                border: const OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white70),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent,
+            ),
+            onPressed: () async {
+              final nav = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+              final prov = context.read<WorkoutProvider>();
+              try {
+                await WorkoutService.updateProgram(
+                  programId: program.id,
+                  name: nameController.text,
+                  description: descriptionController.text,
+                );
+                if (mounted) {
+                  await prov.loadPrograms();
+                  nav.pop();
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Program updated successfully')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Update', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show dialog to set a program as active
+  void _setActiveProgramConfirmation(
+    BuildContext context,
+    Program program,
+    WorkoutProvider provider,
+  ) {
+    // If already active, show info dialog instead
+    if (program.isActive == true) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF2C2C2C),
+          title: const Text(
+            'Program Active',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            '"${program.name}" is already your active program.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK', style: TextStyle(color: Colors.orangeAccent)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation to set as active
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Set as Active Program?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Make "${program.name}" your active program? Any previously active program will be deactivated.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+            ),
+            onPressed: () async {
+              final nav = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                final success = await provider.setActiveProgramById(program.id);
+                if (mounted) {
+                  nav.pop();
+                  if (success) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('"${program.name}" is now active')),
+                    );
+                  } else {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text('Error: ${provider.error ?? 'Unknown error'}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  nav.pop();
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Error: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Set as Active', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show delete confirmation dialog
+  void _showDeleteConfirmationDialog(
+    BuildContext context,
+    Program program,
+    WorkoutProvider provider,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: const Text(
+          'Delete Program?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${program.name}"? This action cannot be undone.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () async {
+              final nav = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                final success = await provider.deleteProgram(program.id);
+                if (mounted) {
+                  nav.pop();
+                  if (success) {
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('Program deleted successfully')),
+                    );
+                  } else {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Error: ${provider.error}')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  nav.pop();
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 }

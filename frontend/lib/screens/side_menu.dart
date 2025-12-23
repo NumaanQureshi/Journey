@@ -1,23 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:journey_application/screens/challenges_screen.dart';
-import 'package:journey_application/screens/home_screen.dart';
-import 'package:journey_application/screens/workout_screen.dart';
-import 'package:journey_application/screens/settings_screen.dart';
-import 'package:journey_application/screens/user_analytics_screen.dart';
-import 'package:journey_application/providers/user_provider.dart';
+import 'challenges_screen.dart';
+import 'home_screen.dart';
+import 'workout_screen.dart';
+import 'settings_screen.dart';
+import '../providers/user_provider.dart';
 
 class SideMenu extends StatelessWidget {
   final String? currentScreen;
 
   const SideMenu({super.key, this.currentScreen});
-
-  void _notImplemented(BuildContext context) {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Not implemented')),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,38 +112,40 @@ class SideMenu extends StatelessWidget {
                     }
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.leaderboard, color: Colors.green),
-                  title: const Text(
-                    'Leaderboard',
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                  tileColor: Colors.transparent,
-                  selectedTileColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  onTap: () => _notImplemented(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.analytics, color: Colors.purpleAccent),
-                  title: const Text(
-                    'Analytics',
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                  selected: currentScreen == 'Analytics',
-                  selectedTileColor: Colors.grey.withValues(alpha: 0.3),
-                  hoverColor: Colors.transparent,
-                  onTap: () {
-                    Navigator.pop(context);
-                    if (currentScreen != 'Analytics') {
-                      Navigator.pushReplacement(context,
-                          MaterialPageRoute(builder: (context) => const UserAnalyticsScreen()));
-                    }
-                  },
-                ),
+
+                // == CHALLENGE AND LEADERBOARD FUNCTIONALITY COMING SOON ==
+                // ListTile(
+                //   leading: const Icon(Icons.leaderboard, color: Colors.green),
+                //   title: const Text(
+                //     'Leaderboard',
+                //     style: TextStyle(
+                //       color: Colors.white,
+                //     ),
+                //   ),
+                //   tileColor: Colors.transparent,
+                //   selectedTileColor: Colors.transparent,
+                //   hoverColor: Colors.transparent,
+                //   onTap: () => _notImplemented(context),
+                // ),
+                // ListTile(
+                //   leading: const Icon(Icons.analytics, color: Colors.purpleAccent),
+                //   title: const Text(
+                //     'Analytics',
+                //     style: TextStyle(
+                //       color: Colors.white,
+                //     ),
+                //   ),
+                //   selected: currentScreen == 'Analytics',
+                //   selectedTileColor: Colors.grey.withValues(alpha: 0.3),
+                //   hoverColor: Colors.transparent,
+                //   onTap: () {
+                //     Navigator.pop(context);
+                //     if (currentScreen != 'Analytics') {
+                //       Navigator.pushReplacement(context,
+                //           MaterialPageRoute(builder: (context) => const UserAnalyticsScreen()));
+                //     }
+                //   },
+                // ),
                 const Spacer(),
                 Padding(
                   padding: const EdgeInsets.all(12.0),

@@ -1,1 +1,0 @@
-UPDATE users SET updated_at = NOW() WHERE id = %s;

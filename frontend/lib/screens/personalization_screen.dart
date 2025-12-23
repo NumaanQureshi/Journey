@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'home_screen.dart';
 import '../featureflags/feature_flags.dart';
@@ -47,7 +48,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   final _healthInfoFormKey = GlobalKey<FormState>();
   final _planningFormKey = GlobalKey<FormState>();
 
-  UnitSystem _selectedUnitSystem = UnitSystem.metric;
+  UnitSystem _selectedUnitSystem = UnitSystem.imperial;
 
   final List<String> _promptTitles = [
     'Personal Info',
@@ -117,10 +118,12 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     // }
 
     // 4. Add the text fields
-    final dob = DateTime(_selectedBirthYear!, _selectedBirthMonth!, _selectedBirthDay!).toIso8601String();
+    // Format date as YYYY-MM-DD (matching database format)
+    final dateOfBirth = DateTime(_selectedBirthYear!, _selectedBirthMonth!, _selectedBirthDay!);
+    final dobString = '${dateOfBirth.year}-${dateOfBirth.month.toString().padLeft(2, '0')}-${dateOfBirth.day.toString().padLeft(2, '0')}';
 
     request.fields['name'] = _nameController.text;
-    request.fields['dob'] = dob;
+    request.fields['dob'] = dobString;
     request.fields['gender'] = _selectedGender!;
     request.fields['unit_system'] = _selectedUnitSystem.name; // 'metric' or 'imperial'
     request.fields['height'] = _heightController.text;
@@ -169,26 +172,14 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   }
   // Reusable step builder
   Widget _buildStep({required String title, required Widget child}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 100),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 20),
-            child,
-            const SizedBox(height: 50),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          child,
+          const SizedBox(height: 100),
+        ],
       ),
     );
   }
@@ -201,6 +192,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
       child: Column(
         children: [
           // Profile Picture Picker (optional)
+          const SizedBox(height: 20),
           CircleAvatar(
             radius: 50,
             backgroundImage: _profileImage != null
@@ -213,9 +205,27 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           const SizedBox(height: 10),
           ElevatedButton(
             onPressed: _pickImage,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2C2C2C),
+              foregroundColor: const Color(0xFFFBBF18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('Choose Profile Picture'),
           ),
           const SizedBox(height: 30),
+
+          // Personal Information Section
+          Text(
+            'Personal Information',
+            style: GoogleFonts.lexend(
+              color: const Color(0xFFFBBF18),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // Name Input
           TextFormField(
@@ -223,14 +233,14 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
               filled: true,
-              fillColor: Color.fromARGB(150, 0, 0, 0),
+              fillColor: Color(0xFF2C2C2C),
               labelText: 'Name',
               labelStyle: TextStyle(color: Colors.white70),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.white24),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: Color(0xFFFBBF18)),
               ),
               errorBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.redAccent),
@@ -254,11 +264,11 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           const SizedBox(height: 20),
 
           // Date of Birth Dropdowns
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Date of Birth',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+          Text(
+            'Date of Birth',
+            style: GoogleFonts.kanit(
+              color: Colors.white70,
+              fontSize: 14,
             ),
           ),
           const SizedBox(height: 8),
@@ -266,7 +276,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Month Dropdown
-              Expanded(
+              Flexible(
                 flex: 2,
                 child: _buildDropdown(
                   hint: 'Month',
@@ -277,7 +287,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
               ),
               const SizedBox(width: 12),
               // Day Dropdown
-              Expanded(
+              Flexible(
                 flex: 1,
                 child: _buildDropdown(
                   hint: 'Day',
@@ -288,12 +298,12 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
               ),
               const SizedBox(width: 12),
               // Year Dropdown
-              Expanded(
+              Flexible(
                 flex: 2,
                 child: _buildDropdown(
                   hint: 'Year',
                   value: _selectedBirthYear,
-                  items: List.generate(DateTime.now().year - 1899, (i) => DateTime.now().year - i),
+                  items: List.generate(88, (i) => DateTime.now().year - 13 - i), // Minimum age: 13, maximum age: 100
                   onChanged: (val) => setState(() => _selectedBirthYear = val),
                 ),
               ),
@@ -339,14 +349,14 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             dropdownColor: Colors.grey.shade800,
             decoration: const InputDecoration(
               filled: true,
-              fillColor: Color.fromARGB(150, 0, 0, 0),
+              fillColor: Color(0xFF2C2C2C),
               labelText: 'Gender',
               labelStyle: TextStyle(color: Colors.white70),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.white24),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: Color(0xFFFBBF18)),
               ),
               errorBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.redAccent),
@@ -378,7 +388,6 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     );
   }
 
-  // Reusable dropdown builder for DOB
   Widget _buildDropdown({
     required String hint,
     required int? value,
@@ -387,17 +396,19 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   }) {
     return DropdownButtonFormField<int>(
       initialValue: value,
-      hint: Text(hint, style: const TextStyle(color: Colors.white70)),
+      isExpanded: true,
       style: const TextStyle(color: Colors.white),
       dropdownColor: Colors.grey.shade800,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         filled: true,
-        fillColor: Color.fromARGB(150, 0, 0, 0),        
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-        errorBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
-        focusedErrorBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
+        fillColor: const Color(0xFF2C2C2C),
+        labelText: hint,
+        labelStyle: const TextStyle(color: Colors.white70),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFFBBF18))),
+        errorBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
+        focusedErrorBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
       ),
       items: items.map((item) => DropdownMenuItem(value: item, child: Text(item.toString()))).toList(),
       onChanged: onChanged,
@@ -421,15 +432,24 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
       key: _healthInfoFormKey,
       child: Column(
         children: [
+          Text(
+            'Physical Measurements',
+            style: GoogleFonts.lexend(
+              color: const Color(0xFFFBBF18),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
           SegmentedButton<UnitSystem>(
             segments: const <ButtonSegment<UnitSystem>>[
               ButtonSegment<UnitSystem>(
-                value: UnitSystem.metric,
-                label: Text('Metric (cm / kg)'),
-              ),
-              ButtonSegment<UnitSystem>(
                 value: UnitSystem.imperial,
                 label: Text('Imperial (in / lb)'),
+              ),
+              ButtonSegment<UnitSystem>(
+                value: UnitSystem.metric,
+                label: Text('Metric (cm / kg)'),
               ),
             ],
             selected: <UnitSystem>{_selectedUnitSystem},
@@ -441,8 +461,8 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             style: SegmentedButton.styleFrom(
               backgroundColor: Colors.grey.shade800,
               foregroundColor: Colors.white,
-              selectedForegroundColor: Colors.white,
-              selectedBackgroundColor: Colors.blue,
+              selectedForegroundColor: Colors.black,
+              selectedBackgroundColor: const Color(0xFFFBBF18),
             ),
           ),
           const SizedBox(height: 20),
@@ -451,7 +471,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               filled: true,
-              fillColor: Color.fromARGB(150, 0, 0, 0),
+              fillColor: const Color(0xFF2C2C2C),
               labelText: _selectedUnitSystem == UnitSystem.metric
                   ? 'Height (cm)'
                   : 'Height (in)',
@@ -460,7 +480,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                 borderSide: BorderSide(color: Colors.white24),
               ),
               focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: Color(0xFFFBBF18)),
               ),
               errorBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.redAccent),
@@ -481,7 +501,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               filled: true,
-              fillColor: Color.fromARGB(150, 0, 0, 0),
+              fillColor: const Color(0xFF2C2C2C),
               labelText: _selectedUnitSystem == UnitSystem.metric
                   ? 'Weight (kg)'
                   : 'Weight (lb)',
@@ -490,7 +510,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                 borderSide: BorderSide(color: Colors.white24),
               ),
               focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: Color(0xFFFBBF18)),
               ),
               errorBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.redAccent),
@@ -516,6 +536,15 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
       key: _planningFormKey,
       child: Column(
         children: [
+          Text(
+            'Fitness Goals',
+            style: GoogleFonts.lexend(
+              color: const Color(0xFFFBBF18),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
           // Main Focus Dropdown
           DropdownButtonFormField<String>(
             initialValue: _mainFocus,
@@ -523,14 +552,14 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             dropdownColor: Colors.grey.shade800,
             decoration: const InputDecoration(
               filled: true,
-              fillColor: Color.fromARGB(150, 0, 0, 0),
+              fillColor: Color(0xFF2C2C2C),
               labelText: 'Main Focus',
               labelStyle: TextStyle(color: Colors.white70),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.white24),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: Color(0xFFFBBF18)),
               ),
               errorBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.redAccent),
@@ -561,7 +590,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               filled: true,
-              fillColor: Color.fromARGB(150, 0, 0, 0),
+              fillColor: const Color(0xFF2C2C2C),
               labelText:
                   'Goal Weight (${_selectedUnitSystem == UnitSystem.metric ? "kg" : "lb"})',
               labelStyle: const TextStyle(color: Colors.white70),
@@ -569,7 +598,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                 borderSide: BorderSide(color: Colors.white24),
               ),
               focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: Color(0xFFFBBF18)),
               ),
               errorBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.redAccent),
@@ -593,14 +622,14 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
             dropdownColor: Colors.grey.shade800,
             decoration: const InputDecoration(
               filled: true,
-              fillColor: Color.fromARGB(150, 0, 0, 0),
+              fillColor: Color(0xFF2C2C2C),
               labelText: 'Desired Activity Intensity',
               labelStyle: TextStyle(color: Colors.white70),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.white24),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: Color(0xFFFBBF18)),
               ),
               errorBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.redAccent),
@@ -623,6 +652,61 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // Method to show skip confirmation dialog
+  void _showSkipConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2C2C2C),
+          title: Text(
+            'Skip Profile Setup?',
+            style: GoogleFonts.lexend(
+              color: const Color(0xFFFBBF18),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'You can complete your profile later in settings.',
+            style: GoogleFonts.kanit(
+              color: Colors.white70,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.lexend(
+                  color: const Color(0xFFFBBF18),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFBBF18),
+                foregroundColor: Colors.black,
+              ),
+              child: Text(
+                'Skip',
+                style: GoogleFonts.lexend(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -660,51 +744,54 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFF1A1A1A),
         elevation: 0,
         centerTitle: true,
+        title: Text(
+          'Setup Profile',
+          style: GoogleFonts.lexend(color: const Color(0xFFFBBF18)),
+        ),
+        automaticallyImplyLeading: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4.0),
+          child: Container(
+            color: Colors.orange,
+            height: 4.0,
+          ),
+        ),
       ),
-      extendBodyBehindAppBar: true,
-      body: Stack(
+      backgroundColor: const Color(0xFF1A1A1A),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentPage = index;
+          });
+        },
         children: [
-          // Background image
-          SizedBox.expand(
-            child: Image.asset('assets/images/blur_bg_dark.png', fit: BoxFit.cover),
+          // Step 1: Personal Info
+          _buildStep(
+            title: 'Personal Info',
+            child: _buildPersonalInfoStep(),
           ),
 
-          // PageView for multi-step personalization
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            children: [
-              // Step 1: Personal Info
-              _buildStep(
-                title: 'Personal Info',
-                child: _buildPersonalInfoStep(),
-              ),
-
-              // Step 2: Health Info (placeholder for now)
-              _buildStep(
-                title: 'Health Info',
-                child: _buildHealthInfoStep(),
-              ),
-              _buildStep(
-                title: 'Planning',
-                child: _buildPlanningInfoStep(),
-              ),
-            ],
+          // Step 2: Health Info (placeholder for now)
+          _buildStep(
+            title: 'Health Info',
+            child: _buildHealthInfoStep(),
           ),
-
-          // Navigation buttons
-          Positioned(
-            bottom: 50,
-            left: 24,
-            right: 24,
-            child: Row(
+          _buildStep(
+            title: 'Planning',
+            child: _buildPlanningInfoStep(),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 50.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 if (_currentPage > 0)
@@ -717,21 +804,45 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                     },
                     child: const Text(
                       'Back',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Color(0xFFFBBF18)),
                     ),
                   )
                 else
                   const SizedBox(),
                 ElevatedButton(
-                  onPressed: _goToNextPage, // Updated button to use validation
+                  onPressed: _goToNextPage,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFBBF18),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   child: Text(
                     _currentPage < _promptTitles.length - 1 ? 'Next' : 'Finish',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: _showSkipConfirmation,
+                child: Text(
+                  'Skip for Now',
+                  style: GoogleFonts.kanit(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -76,6 +76,9 @@ class AuthService {
         }),
       );
 
+      debugPrint('SignUp Response Status: ${response.statusCode}');
+      debugPrint('SignUp Response Body: ${response.body}');
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         final responseBody = jsonDecode(response.body);
         if (responseBody is Map<String, dynamic> && responseBody.containsKey('token')) {
@@ -88,8 +91,10 @@ class AuthService {
         // token missing should return false
         return false; 
       }
+      debugPrint('SignUp failed with status ${response.statusCode}');
       return false;
     } catch (e) {
+      debugPrint('SignUp exception: $e');
       return false;
     }
   }
@@ -170,6 +175,45 @@ class AuthService {
         return false;
       }
     } catch (e) {
+      return false;
+    }
+  }
+
+  /// Checks if a valid token exists and is still valid by making a test request
+  Future<bool> isTokenValid() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        debugPrint('No token found in storage');
+        return false;
+      }
+
+      // Make a simple request to verify the token is still valid
+      final response = await http.get(
+        Uri.parse(ApiService.me()),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(
+        const Duration(seconds: 5),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('Token is valid');
+        return true;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        // Token is invalid or expired
+        debugPrint('Token is invalid (${response.statusCode})');
+        await _storage.delete(key: 'auth_token');
+        return false;
+      } else {
+        // Other error - assume token might still be valid
+        debugPrint('Token validation returned status ${response.statusCode}');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error validating token: $e');
       return false;
     }
   }

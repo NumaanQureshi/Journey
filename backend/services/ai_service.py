@@ -5,35 +5,32 @@ from typing import List, Dict, Any, Optional
 import requests
 from datetime import datetime
 import psycopg2
+from utils.sql_loader import load_sql_query
+SYSTEM_PROMPT = "You are a certified personal trainer AI assistant. You help users create safe, effective workout plans, explain exercises, provide form cues, and answer general fitness or app-related questions. You prioritize safety, avoid unsafe advice, and ask clarifying questions when information is missing. Avoid misinformation and help the user the best you can. When evaluating exercises or weight loads, classify them using one safety label: Safe, Optimal, Caution, or Dangerous. Always explain the reasoning, consider the user’s experience level and context, and suggest safer alternatives when appropriate. Do not encourage unsafe behavior and flag whether to Cautious or something is Dangerous with in detail explanation and provide better alternatives."
+APP_CONTEXT = """
+APP CONTEXT (Journey):
+- Users have a primary fitness goal (build muscle, lose fat, general fitness)
+- The app allows user to track workouts
+- The app allows users to create AI-powered personalized workouts
+- The AI focuses on safety, information, and progress
+"""
 
 
 class FitnessAIAgent:
     def __init__(self):
         self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-        self.model_id = os.environ.get("FINETUNED_MODEL_ID")
-    
-        if self.model_id:
-            print(f"✓ Using fine-tuned model")
-        else:
-            self.model_id = "gpt-4o-mini-2024-07-18"
-            print(f"⚠ Using base model: {self.model_id}")
+        self.model_id = os.environ.get("FINETUNED_MODEL_ID", "gpt-4o-mini-2024-07-18")
 
         # Load exercises database
         self.exercises = self._load_exercises()
 
     def _load_exercises(self):
-        try:
-            response = requests.get(
-                "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",
-                timeout=10
-            )
-            exercises = response.json()
-            print(f"✓ Loaded {len(exercises)} exercises from database")
-            return exercises
-        except Exception as e:
-            print(f"⚠ Error loading exercises: {e}")
-            return []
+        res = requests.get(
+            "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",
+            timeout=10
+        )
+        res.raise_for_status()
+        return res.json()
 
     def _build_user_context(self, user_data: Dict[str, Any]) -> str:
         context_parts = []
@@ -116,7 +113,7 @@ Return a JSON workout plan with this structure:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert personal trainer who creates highly personalized workout plans."
+                        "content": SYSTEM_PROMPT
                     },
                     {
                         "role": "user",
@@ -207,7 +204,7 @@ Provide analysis as JSON:
             response = self.client.chat.completions.create(
                 model=self.model_id,
                 messages=[
-                    {"role": "system", "content": "You are a personal trainer analyzing workout performance."},
+                    {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
@@ -230,6 +227,15 @@ Provide analysis as JSON:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def is_safety_question(self, message: str) -> bool:
+        keywords = [
+            "lbs", "kg", "heavy", "max", "tired",
+            "bench", "squat", "deadlift",
+            "safe", "dangerous", "too much", "pb", "personal best"
+        ]
+        msg = message.lower()
+        return any(k in msg for k in keywords)
+
     def chat_with_trainer(
             self,
             user_data: Dict[str, Any],
@@ -240,19 +246,24 @@ Provide analysis as JSON:
         user_context = self._build_user_context(user_data)
 
         messages = [
-            {
-                "role": "system",
-                "content": f"""You are a expert and knowledgeable personal trainer.
-
-CLIENT CONTEXT:
-{user_context}
-
-Provide helpful, personalized advice based on their situation."""
-            }
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": APP_CONTEXT},
+            {"role": "system", "content": f"USER CONTEXT:\n{user_context}"}
         ]
 
         if conversation_history:
             messages.extend(conversation_history)
+        if self.is_safety_question(message):
+            message += """
+
+        Format a response regarding the concern:
+        {
+          "label": "Safe | Optimal | Caution | Dangerous",
+          "reasoning": "Why this label applies based on the user's experience",
+          "recommendation": "What the user should do instead or how to proceed safely",
+          "safer_alternatives": ["alternative 1", "alternative 2"],
+        }
+        """
 
         messages.append({"role": "user", "content": message})
 
@@ -314,53 +325,23 @@ Return JSON:
 
 def get_user_profile(user_id: int, cur) -> Dict[str, Any]:
     """Get complete user profile"""
-    cur.execute("""
-        SELECT 
-            u.id, u.username, u.email,
-            p.name, p.age, p.gender, p.height_in, p.weight_lb,
-            p.main_focus, p.fitness_level, p.injuries, 
-            p.available_equipment, p.preferred_workout_days
-        FROM users u
-        LEFT JOIN profiles p ON u.id = p.user_id
-        WHERE u.id = %s
-    """, (user_id,))
+    query = load_sql_query('select_full_user_profile.sql')
+    cur.execute(query, (user_id,))
 
     profile = cur.fetchone()
     return dict(profile) if profile else {}
 
 
 def get_user_workout_history(user_id: int, cur, limit: int = 10) -> List[Dict[str, Any]]:
-    cur.execute("""
-        SELECT 
-            w.id, w.start_time, w.end_time, w.duration_min,
-            COUNT(we.id) as exercises_count
-        FROM workouts w
-        LEFT JOIN workout_exercises we ON w.id = we.workout_id
-        WHERE w.user_id = %s AND w.end_time IS NOT NULL
-        GROUP BY w.id
-        ORDER BY w.start_time DESC
-        LIMIT %s
-    """, (user_id, limit))
+    query = load_sql_query('select_ai_user_workout_history.sql')
+    cur.execute(query, (user_id, limit))
 
     return [dict(w) for w in cur.fetchall()]
 
 
 def get_user_strength_progress(user_id: int, cur) -> Dict[str, Dict[str, Any]]:
-    cur.execute("""
-        WITH latest AS (
-            SELECT 
-                e.name,
-                MAX(we.weight_lb) as current_weight,
-                MAX(we.reps_completed) as current_reps
-            FROM workout_exercises we
-            JOIN workouts w ON we.workout_id = w.id
-            JOIN exercises e ON we.exercise_id = e.id
-            WHERE w.user_id = %s
-            GROUP BY e.name
-        )
-        SELECT * FROM latest
-        LIMIT 10
-    """, (user_id,))
+    query = load_sql_query('select_user_strength_progress_ai.sql')
+    cur.execute(query, (user_id,))
 
     result = {}
     for row in cur.fetchall():
@@ -374,40 +355,28 @@ def get_user_strength_progress(user_id: int, cur) -> Dict[str, Dict[str, Any]]:
 
 
 def save_ai_workout_plan(user_id: int, goal: str, workout_data: Dict, cur) -> int:
-    cur.execute("""
-        INSERT INTO ai_workout_plans (user_id, goal, workout_data)
-        VALUES (%s, %s, %s)
-        RETURNING id
-    """, (user_id, goal, psycopg2.extras.Json(workout_data)))
+    query = load_sql_query('insert_ai_workout_plan.sql')
+    cur.execute(query, (user_id, goal, psycopg2.extras.Json(workout_data)))
 
     return cur.fetchone()['id']
 
 
 def get_recent_soreness_data(user_id: int, cur) -> List[str]:
-    cur.execute("""
-        SELECT DISTINCT e.category
-        FROM workout_exercises we
-        JOIN workouts w ON we.workout_id = w.id
-        JOIN exercises e ON we.exercise_id = e.id
-        WHERE w.user_id = %s AND w.start_time > NOW() - INTERVAL '48 hours'
-    """, (user_id,))
+    query = load_sql_query('select_recent_soreness.sql')
+    cur.execute(query, (user_id,))
 
     return [c['category'] for c in cur.fetchall() if c.get('category')]
 
 
 def save_ai_conversation(user_id: int, message: str, response: str, cur):
-    cur.execute("""
-        INSERT INTO ai_conversations (user_id, message, response)
-        VALUES (%s, %s, %s)
-    """, (user_id, message, response))
+    query = load_sql_query('insert_ai_conversation.sql')
+    cur.execute(query, (user_id, message, response))
 
 
 def update_workout_plan_feedback(plan_id: int, rating: int, notes: str, cur):
-    cur.execute("""
-        UPDATE ai_workout_plans
-        SET feedback_rating = %s, feedback_notes = %s, was_completed = TRUE
-        WHERE id = %s
-    """, (rating, notes, plan_id))
+    query = load_sql_query('update_ai_workout_plan_feedback.sql')
+    cur.execute(query, (rating, notes, plan_id))
+
 
 
 fitness_ai_agent = FitnessAIAgent()
