@@ -43,6 +43,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   int _currentExerciseIndex = 0;
   bool _isLoading = true;
   String? _errorMessage;
+  bool _initializationStarted = false;
   
   // Set tracking - map of exerciseIndex to list of completed sets
   final Map<int, List<Map<String, dynamic>>> _completedSets = {};
@@ -55,8 +56,19 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   }
 
   Future<void> _initializeSession() async {
+    // Prevent multiple initialization calls
+    if (_initializationStarted) {
+      debugPrint('DEBUG: Session initialization already in progress, skipping duplicate call');
+      return;
+    }
+    _initializationStarted = true;
+    
     try {
       final provider = context.read<WorkoutProvider>();
+      debugPrint('DEBUG: Active program: ${provider.activeProgram?.name} (ID: ${provider.activeProgram?.id})');
+      debugPrint('DEBUG: Looking for template ID: ${widget.templateId}');
+      debugPrint('DEBUG: Available templates: ${provider.activeProgram?.templates.map((t) => '${t.name} (ID: ${t.id})').join(', ')}');
+      
       final template = provider.activeProgram?.templates
           .firstWhere((t) => t.id == widget.templateId);
 
@@ -68,6 +80,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
         return;
       }
 
+      debugPrint('DEBUG: Found template: ${template.name} with ${template.exercises.length} exercises');
+
       // Fetch exercises for this template
       _exercises = template.exercises;
       
@@ -78,31 +92,41 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
 
       // Create a session on the backend
       try {
+        debugPrint('DEBUG: Creating workout session for template ${widget.templateId}');
         final session = await WorkoutService.createWorkoutSession(widget.templateId);
         _sessionId = session.id;
         
-        // Pre-create workout sets based on template
-        await WorkoutService.preCreateWorkoutSets(session.id, widget.templateId);
+        debugPrint('DEBUG: Session created successfully with ID: $_sessionId');
         
-        debugPrint('Session created with ID: $_sessionId');
+        // Backend already pre-creates sets when session is created
+        // No need to call preCreateWorkoutSets() separately
+
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+
+        _startStopwatch();
       } catch (e) {
         debugPrint('Error creating session: $e');
-        // Continue with temporary ID if backend fails
-        _sessionId = DateTime.now().millisecondsSinceEpoch;
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Failed to create session: $e';
+            _isLoading = false;
+          });
+        }
       }
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      _startStopwatch();
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error initializing session: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error initializing session: $e';
+          _isLoading = false;
+        });
+      }
+      debugPrint('Error in _initializeSession: $e');
+      }
     }
-  }
 
   @override
   void dispose() {
@@ -177,10 +201,54 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     if (_errorMessage != null) {
       return Scaffold(
         backgroundColor: const Color(0xFF0F0F0F),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Text('Error'),
+        ),
         body: Center(
-          child: Text(
-            _errorMessage!,
-            style: const TextStyle(color: Colors.red),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to Start Session',
+                  style: GoogleFonts.mavenPro(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orangeAccent,
+                  ),
+                  child: const Text(
+                    'Go Back',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -674,6 +742,21 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       final reps = int.tryParse(_repController.text);
       final weight = double.tryParse(_weightController.text);
       
+      // Validate that both weight and reps are entered
+      if (reps == null || weight == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Please enter both weight and reps'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+      
       // Call backend to log the set
       try {
         await WorkoutService.logWorkoutSet(
@@ -688,6 +771,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       } catch (e) {
         debugPrint('Error logging set: $e');
       }
+      
+      final loggedSetNumber = _currentSetNumber;
       
       setState(() {
         // Add to completed sets tracking
@@ -708,7 +793,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Set $_currentSetNumber logged!'),
+            content: Text('Set $loggedSetNumber logged!'),
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 1),
           ),
@@ -725,10 +810,25 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       final currentExercise = _exercises[_currentExerciseIndex];
       final sets = _completedSets[_currentExerciseIndex] ?? [];
       
-      // If user has entered weight or reps for the current set, log it
+      // If user has entered weight or reps for the current set, validate and log it
       if (_repController.text.isNotEmpty || _weightController.text.isNotEmpty) {
         final reps = int.tryParse(_repController.text);
         final weight = double.tryParse(_weightController.text);
+        
+        // Only proceed if both values are provided
+        if (reps == null || weight == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Please enter both weight and reps before moving to next exercise'),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
         
         try {
           await WorkoutService.logWorkoutSet(
