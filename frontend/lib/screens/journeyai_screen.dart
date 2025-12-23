@@ -29,6 +29,7 @@ class _JourneyAiState extends State<JourneyAi> {
   }
 
   Future<void> _loadConversationHistory() async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       await _aiService.loadConversationHistory();
       setState(() {
@@ -40,7 +41,7 @@ class _JourneyAiState extends State<JourneyAi> {
         _isLoadingHistory = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text('Failed to load chat history: ${e.toString()}')),
         );
       }
@@ -96,6 +97,7 @@ class _JourneyAiState extends State<JourneyAi> {
   }
 
   Future<void> _clearChatHistory() async {
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -116,14 +118,15 @@ class _JourneyAiState extends State<JourneyAi> {
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                final navigator = Navigator.of(context);
                 try {
                   await _aiService.deleteAllConversationsFromBackend();
                   if (mounted) {
+                    navigator.pop();
                     setState(() {
                       // conversationHistory is cleared by the service
                     });
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       const SnackBar(
                         content: Text('Chat history cleared'),
                       ),
@@ -131,7 +134,8 @@ class _JourneyAiState extends State<JourneyAi> {
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    navigator.pop();
+                    messenger.showSnackBar(
                       SnackBar(
                         content: Text('Error clearing history: ${e.toString()}'),
                       ),
@@ -344,7 +348,7 @@ class _JourneyAiState extends State<JourneyAi> {
               _formatTime(message.timestamp),
               style: TextStyle(
                 color: message.role == 'user'
-                    ? const Color(0xFF1A1A1A).withOpacity(0.7)
+                    ? const Color(0xFF1A1A1A).withValues(alpha: 0.7)
                     : Colors.grey[500],
                 fontSize: 12,
               ),
