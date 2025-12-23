@@ -83,6 +83,15 @@ SQL_FOLDERS = {
     'select_ai_user_workout_history.sql': 'ai',
     'select_user_strength_progress_ai.sql': 'ai',
     'update_ai_workout_plan_feedback.sql': 'ai',
+    'select_ai_user_conversations.sql': 'ai',
+    'select_ai_user_workout_plans.sql': 'ai',
+    'select_ai_workout_plan_by_id.sql': 'ai',
+    'count_ai_user_conversations.sql': 'ai',
+    'delete_ai_user_conversations.sql': 'ai',
+    'delete_ai_workout_plan_by_id.sql': 'ai',
+    'verify_ai_workout_plan_ownership.sql': 'ai',
+    'select_ai_conversation_stats.sql': 'ai',
+    'select_ai_workout_plan_stats.sql': 'ai',
 }
 
 def load_sql_query(filename):
