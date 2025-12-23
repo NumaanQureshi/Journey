@@ -227,7 +227,7 @@ Provide analysis as JSON:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def is_safety_question(message: str) -> bool:
+    def is_safety_question(self, message: str) -> bool:
         keywords = [
             "lbs", "kg", "heavy", "max", "tired",
             "bench", "squat", "deadlift",
@@ -246,16 +246,14 @@ Provide analysis as JSON:
         user_context = self._build_user_context(user_data)
 
         messages = [
-            {
-                {"role": "system", "content": f"{SYSTEM_PROMPT}\n\nCLIENT CONTEXT:\n{user_context}"},
-                {"role": "system", "content": APP_CONTEXT},
-                {"role": "system", "content": f"USER CONTEXT:\n{user_context}"}
-            }
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": APP_CONTEXT},
+            {"role": "system", "content": f"USER CONTEXT:\n{user_context}"}
         ]
 
         if conversation_history:
             messages.extend(conversation_history)
-        if is_safety_question(message):
+        if self.is_safety_question(message):
             message += """
 
         Format a response regarding the concern:
