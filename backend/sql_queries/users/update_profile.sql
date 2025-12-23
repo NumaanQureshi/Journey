@@ -8,3 +8,4 @@ SET name = COALESCE(%s, name),
     main_focus = COALESCE(%s, main_focus),
     activity_intensity = COALESCE(%s, activity_intensity)
 WHERE user_id = %s
+RETURNING user_id, name, date_of_birth, gender, height_in, weight_lb, main_focus, goal_weight_lb, activity_intensity, fitness_level, injuries, available_equipment, preferred_workout_days;
