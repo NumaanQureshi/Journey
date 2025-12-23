@@ -147,7 +147,7 @@ class _AiStatsScreenState extends State<AiStatsScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF2A2A2A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_service.dart';
@@ -135,7 +136,7 @@ class AiService {
         throw Exception('Failed to load conversation history. Status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error loading conversation history: $e');
+      debugPrint('Error loading conversation history: $e');
       rethrow;
     }
   }
@@ -173,7 +174,7 @@ class AiService {
         throw Exception('Failed to get quick response. Status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error getting quick response: $e');
+      debugPrint('Error getting quick response: $e');
       rethrow;
     }
   }
@@ -263,7 +264,7 @@ class AiService {
         throw Exception('Failed to load workout plans. Status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error loading workout plans: $e');
+      debugPrint('Error loading workout plans: $e');
       rethrow;
     }
   }
@@ -297,7 +298,7 @@ class AiService {
         throw Exception('Failed to load workout plan. Status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error loading workout plan: $e');
+      debugPrint('Error loading workout plan: $e');
       rethrow;
     }
   }
@@ -329,7 +330,7 @@ class AiService {
         throw Exception('Failed to delete workout plan. Status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error deleting workout plan: $e');
+      debugPrint('Error deleting workout plan: $e');
       rethrow;
     }
   }
@@ -362,7 +363,7 @@ class AiService {
         throw Exception('Failed to delete conversations. Status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error deleting conversations: $e');
+      debugPrint('Error deleting conversations: $e');
       rethrow;
     }
   }
@@ -394,7 +395,7 @@ class AiService {
         throw Exception('Failed to load AI stats. Status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error loading AI stats: $e');
+      debugPrint('Error loading AI stats: $e');
       rethrow;
     }
   }
