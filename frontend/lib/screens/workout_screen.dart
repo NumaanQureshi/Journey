@@ -125,7 +125,7 @@ class _WorkoutContentState extends State<WorkoutContent>
 
   Future<void> _fetchMotivationalMessage() async {
     try {
-      final message = await _aiService.sendMessage(
+      final message = await _aiService.getQuickResponse(
         'Give me a single sentence motivational quote to encourage someone to have a great workout today. '
         'Just the quote, no additional text or punctuation.',
       );
