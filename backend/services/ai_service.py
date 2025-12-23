@@ -368,9 +368,19 @@ def get_recent_soreness_data(user_id: int, cur) -> List[str]:
     return [c['category'] for c in cur.fetchall() if c.get('category')]
 
 
-def save_ai_conversation(user_id: int, message: str, response: str, cur):
-    query = load_sql_query('insert_ai_conversation.sql')
-    cur.execute(query, (user_id, message, response))
+def save_ai_conversation(user_id: int, message: str, response: str, cur, save_to_history: bool = True):
+    """Save AI conversation to history.
+    
+    Args:
+        user_id: The user's ID
+        message: The user's message
+        response: The AI's response
+        cur: Database cursor
+        save_to_history: If False, conversation won't be saved (e.g., for system prompts like motivational messages)
+    """
+    if save_to_history:
+        query = load_sql_query('insert_ai_conversation.sql')
+        cur.execute(query, (user_id, message, response))
 
 
 def update_workout_plan_feedback(plan_id: int, rating: int, notes: str, cur):

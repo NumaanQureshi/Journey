@@ -125,9 +125,10 @@ def chat_with_trainer(user_id):
             conversation_history=data.get('conversation_history', [])
         )
 
-        # Save conversation
+        # Save conversation (skip if marked as system prompt)
         if result['success']:
-            save_ai_conversation(user_id, data.get('message'), result['response'], cur)
+            save_to_history = data.get('save_to_history', True)
+            save_ai_conversation(user_id, data.get('message'), result['response'], cur, save_to_history=save_to_history)
             conn.commit()
 
         return jsonify(convert_dict_dates_to_iso8601(result)), 200 if result['success'] else 500
