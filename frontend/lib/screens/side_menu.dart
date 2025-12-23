@@ -4,20 +4,12 @@ import 'challenges_screen.dart';
 import 'home_screen.dart';
 import 'workout_screen.dart';
 import 'settings_screen.dart';
-import 'user_analytics_screen.dart';
 import '../providers/user_provider.dart';
 
 class SideMenu extends StatelessWidget {
   final String? currentScreen;
 
   const SideMenu({super.key, this.currentScreen});
-
-  void _notImplemented(BuildContext context) {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Not implemented')),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
