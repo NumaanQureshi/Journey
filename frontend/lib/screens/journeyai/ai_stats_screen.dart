@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/ai_service.dart';
+import '../../services/ai_service.dart';
 
 class AiStatsScreen extends StatefulWidget {
   const AiStatsScreen({super.key});

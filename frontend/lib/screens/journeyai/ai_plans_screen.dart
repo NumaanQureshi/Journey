@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/ai_service.dart';
+import '../../services/ai_service.dart';
 
 class AiPlansScreen extends StatefulWidget {
   const AiPlansScreen({super.key});

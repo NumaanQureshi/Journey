@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'login.dart';
-import 'personalization_screen.dart';
-import '../services/auth_service.dart';
-import '../providers/user_provider.dart';
+import '../personalization/personalization_screen.dart';
+import '../../services/auth_service.dart';
+import '../../providers/user_provider.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});

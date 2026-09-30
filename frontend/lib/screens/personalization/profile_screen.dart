@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'friend_screen.dart';
-import 'login_screen.dart';
+import '../social/friend_screen.dart';
+import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/user_provider.dart';
+import '../../providers/user_provider.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});

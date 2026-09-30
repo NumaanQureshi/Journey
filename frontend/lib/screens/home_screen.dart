@@ -5,10 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
-import 'profile_screen.dart';
+import 'personalization/profile_screen.dart';
 import 'side_menu.dart';
-import 'workout_screen.dart';
-import 'journeyai_screen.dart';
+import 'workout/workout_screen.dart';
+import 'journeyai/journeyai_screen.dart';
 import '../providers/challenge_provider.dart';
 import 'challenges_screen.dart';
 

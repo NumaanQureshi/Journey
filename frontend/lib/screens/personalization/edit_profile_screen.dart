@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../featureflags/feature_flags.dart';
-import '../services/auth_service.dart';
-import '../services/api_service.dart';
-import '../providers/user_provider.dart';
-import 'side_menu.dart';
+import '../../featureflags/feature_flags.dart';
+import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
+import '../../providers/user_provider.dart';
+import '../side_menu.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});

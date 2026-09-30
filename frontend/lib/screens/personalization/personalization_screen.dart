@@ -4,10 +4,10 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'home_screen.dart';
-import '../featureflags/feature_flags.dart';
-import '../services/auth_service.dart';
-import '../services/api_service.dart';
+import '../home_screen.dart';
+import '../../featureflags/feature_flags.dart';
+import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
 
 class PersonalizationScreen extends StatefulWidget {
   const PersonalizationScreen({super.key});

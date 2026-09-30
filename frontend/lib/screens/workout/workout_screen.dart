@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'side_menu.dart';
+import '../side_menu.dart';
 import 'workout_plans.dart';
 import 'dart:core';
 import 'dart:math' as math;
 import 'workout_logs.dart';
 import 'workout_session.dart';
-import '../services/ai_service.dart';
-import '../providers/workout_provider.dart';
-import '../services/workout_service.dart';
+import '../../services/ai_service.dart';
+import '../../providers/workout_provider.dart';
+import '../../services/workout_service.dart';
 
 class _RingProgressPainter extends CustomPainter {
   final double progress;

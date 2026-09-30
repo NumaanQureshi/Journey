@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../services/workout_service.dart';
+import '../../services/workout_service.dart';
 
 class WorkoutLogs extends StatefulWidget {
   const WorkoutLogs({super.key});

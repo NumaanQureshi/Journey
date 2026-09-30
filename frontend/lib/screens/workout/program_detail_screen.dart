@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/workout_provider.dart';
-import '../services/workout_service.dart';
+import '../../providers/workout_provider.dart';
+import '../../services/workout_service.dart';
 import 'workout_session.dart' as workout_screens;
 
 class ProgramDetailScreen extends StatefulWidget {
