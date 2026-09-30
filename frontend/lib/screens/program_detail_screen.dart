@@ -369,7 +369,7 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
           content: SizedBox(
             width: double.maxFinite,
             child: ReorderableListView.builder(
-              onReorder: (oldIndex, newIndex) {
+              onReorderItem: (oldIndex, newIndex) {
                 setState(() {
                   if (oldIndex < newIndex) {
                     newIndex -= 1;
