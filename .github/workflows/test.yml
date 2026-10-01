@@ -9,6 +9,7 @@ on:
       - 'test-release'
     paths:
       - 'frontend/**'
+      - '.github/workflows/test.yml'
   push:
     branches:
       - main
@@ -17,6 +18,7 @@ on:
       - 'test-release'
     paths:
       - 'frontend/**'
+      - '.github/workflows/test.yml'
 
 permissions:
   contents: read
@@ -28,6 +30,11 @@ concurrency:
 jobs:
   flutter_ci:
     runs-on: ubuntu-latest
+
+    # Applies working-directory to all run commands in this job automatically
+    defaults:
+      run:
+        working-directory: ./frontend
 
     steps:
       - name: Checkout Code
@@ -48,11 +55,9 @@ jobs:
 
       - name: Install Dependencies
         run: flutter pub get
-        working-directory: ./frontend
 
       - name: Analyze Project
         run: flutter analyze --no-fatal-infos
-        working-directory: ./frontend
 
       - name: Run Tests (if present)
         run: |
@@ -61,16 +66,3 @@ jobs:
           else
             echo "No test files matching '*_test.dart' found. Skipping flutter test."
           fi
-        working-directory: ./frontend
-      
-      # Build Steps to be added later
-      
-      # # java is sometimes necessary for building apk
-      # - name: Setup Java
-      #   uses: actions/setup-java@v4
-      #   with:
-      #     distribution: 'temurin'
-      #     java-version: '17'
-
-      # - name: Flutter Build (Android)
-      #   run: flutter build apk --release
