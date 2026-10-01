@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'challenges_screen.dart';
 import 'home_screen.dart';
-import 'workout_screen.dart';
-import 'settings_screen.dart';
+import 'workout/workout_screen.dart';
+import 'settings/settings_screen.dart';
 import '../providers/user_provider.dart';
 
 class SideMenu extends StatelessWidget {

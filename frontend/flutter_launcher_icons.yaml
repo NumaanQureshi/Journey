@@ -1,0 +1,5 @@
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false # set to true when ios enabled
+  image_path: "assets/images/journey_logo.png"
+  remove_alpha_ios: false # Ensures your iOS icon doesn't get rejected for transparency
