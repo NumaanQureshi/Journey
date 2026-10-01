@@ -1,0 +1,94 @@
+# ==============================================================================
+# Environment & Secrets (Global)
+# ==============================================================================
+.env
+.env.*
+!.env.example
+
+# ==============================================================================
+# IDEs & Editors (Global)
+# ==============================================================================
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.atom/
+.history/
+
+# ==============================================================================
+# Operating System & System Files (Global)
+# ==============================================================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+*.swp
+*.class
+*.log
+
+# ==============================================================================
+# Backend: Python & Services
+# ==============================================================================
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+tools/
+# Fine-tuned model metadata/artifacts
+**/finetune/fine_tuned_model_id.txt
+
+# ==============================================================================
+# Frontend: Unused Platform Targets (Mobile-Only Project)
+# ==============================================================================
+frontend/linux/
+frontend/windows/
+frontend/macos/
+frontend/web/
+
+# ==============================================================================
+# Frontend: Flutter & Dart Artifacts
+# ==============================================================================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+**/doc/api/
+.build/
+.buildlog/
+migrate_working_dir/
+
+# Symbolication & Obfuscation
+app.*.symbols
+app.*.map.json
+
+# ==============================================================================
+# Frontend: Android Platform Build Artifacts
+# ==============================================================================
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/build/
+**/android/.gradle/
+**/android/.idea/
+**/android/local.properties
+**/android/key.properties
+
+# ==============================================================================
+# Frontend: iOS Platform Build Artifacts
+# ==============================================================================
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/Debug.xcconfig
+**/ios/Flutter/Release.xcconfig
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/build/
+**/ios/Podfile.lock
+**/ios/Pods/
+**/ios/.symlinks/
+.swiftpm/

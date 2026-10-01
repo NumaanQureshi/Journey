@@ -1,4 +1,4 @@
-name: journey_application
+name: Journey
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -27,6 +27,7 @@ dependencies:
   shared_preferences: ^2.5.3
   flutter_svg: ^2.2.3
   intl: ^0.20.2
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
